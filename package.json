@@ -1,0 +1,36 @@
+{
+  "name": "@agent-arts/editor",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/editor.umd.cjs",
+  "module": "./dist/editor.js",
+  "types": "./dist/core.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/editor.js",
+      "require": "./dist/editor.umd.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.3.3",
+    "@codemirror/lang-markdown": "^6.2.3",
+    "@codemirror/language-data": "^6.3.1",
+    "@codemirror/state": "^6.4.0",
+    "@codemirror/view": "^6.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "@types/node": "^20.11.0",
+    "vite": "^5.0.8",
+    "vite-plugin-dts": "^3.7.0"
+  }
+}
