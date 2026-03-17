@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive, nextTick } from 'vue'
+import { onMounted, ref, reactive, nextTick, onUnmounted } from 'vue'
 import {
   EditorBlock,
   CustomEditor,
@@ -28,6 +28,12 @@ const showAIDialog = ref(false);
 // 插件库相关状态
 const pluginPopupStyle = ref({ top: '0px', left: '0px' });
 const showPluginPopup = ref(false);
+
+const closeAllPopups = () => {
+  showPopup.value = false;
+  showAIDialog.value = false;
+  showPluginPopup.value = false;
+}
 
 const openPopup = (id: string, rect: DOMRect) => {
   const block = editor.value?.getBlock(id);
@@ -167,7 +173,14 @@ onMounted(() => {
       showPopup.value = false;
     }
   });
+
+  // 全局点击监听关闭浮框
+  document.addEventListener('mousedown', closeAllPopups);
 })
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', closeAllPopups);
+});
 
 defineExpose({
   get editor() {
