@@ -1,5 +1,5 @@
 import { EditorState, StateField, StateEffect, Facet, Text } from '@codemirror/state';
-import { EditorView, keymap, Decoration, DecorationSet, WidgetType, ViewPlugin, ViewUpdate } from '@codemirror/view';
+import { EditorView, keymap, Decoration, DecorationSet, WidgetType, ViewPlugin, ViewUpdate, drawSelection } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -627,6 +627,7 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
       ...defaultKeymap,
       ...historyKeymap
     ]),
+    drawSelection(),
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     callbacksFacet.of(callbacks),
     initialBlocksFacet.of(initialBlocks),
