@@ -350,7 +350,10 @@ export const blockField = StateField.define<DecorationSet>({
 
 // Helper function to handle backspace on blocks
 const deleteBlock = (view: EditorView, callbacks: CodeMirrorCallbacks) => {
-  const pos = view.state.selection.main.head;
+  const { from: selFrom, to: selTo, empty } = view.state.selection.main;
+  if (!empty) return false;
+
+  const pos = selFrom;
   if (pos === 0) return false;
 
   let blockId: string | null = null;
@@ -362,22 +365,18 @@ const deleteBlock = (view: EditorView, callbacks: CodeMirrorCallbacks) => {
   if (field) {
     field.between(pos - 1, pos, (from, to, value) => {
       const widget = value.spec.widget;
-      if (widget instanceof BlockWidget) {
+      // 必须是正好在光标左侧（或覆盖光标位置）的块
+      if (widget && widget.block && widget.block.id && from < pos && to >= pos) {
         blockId = widget.block.id;
         blockPos = from;
         blockLen = to - from;
-      } else if (widget instanceof PluginWidget) {
-        blockId = widget.block.id;
-        blockPos = from;
-        blockLen = to - from;
+        return false; // 找到一个就停止
       }
     });
   }
 
   if (blockId && blockPos !== null) {
-    // Notify component
     callbacks.deleteBlock(blockId);
-    // Remove the character from doc (this will also remove the decoration)
     view.dispatch({
       changes: { from: blockPos, to: blockPos + blockLen },
       selection: { anchor: blockPos }
@@ -430,12 +429,12 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
   const extensions = [
     history(),
     keymap.of([
-      ...defaultKeymap,
-      ...historyKeymap,
       {
         key: 'Backspace',
         run: (view) => deleteBlock(view, callbacks)
-      }
+      },
+      ...defaultKeymap,
+      ...historyKeymap
     ]),
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     callbacksFacet.of(callbacks),
