@@ -62,6 +62,10 @@
           <div *ngIf="aiLoading" class="ai-loading-indicator">
             <span class="dot"></span>
           </div>
+          <div *ngIf="aiFinished && !aiLoading" class="ai-result-actions">
+            <button class="btn-insert" (click)="insertAIResult()">插入</button>
+            <button class="btn-cancel" (click)="cancelAIResult()">取消</button>
+          </div>
         </div>
 
         <!-- 输入区域 -->

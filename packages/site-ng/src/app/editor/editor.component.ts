@@ -41,6 +41,8 @@ export class EditorComponent implements OnInit, OnDestroy {
   aiResponseText = '';
   isGenerating = false;
   aiLoading = false;
+  aiFinished = false;
+  aiApplyRange: { from: number, to: number } | null = null;
   private aiPlugin!: AIDialogPlugin;
 
   ngOnInit() {
@@ -74,17 +76,28 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.aiPlugin = new AIDialogPlugin({
       onStream: (text: string) => this.aiResponseText = text,
       onLoading: (loading: boolean) => this.aiLoading = loading,
-      onComplete: () => this.isGenerating = false,
-      onStop: () => this.isGenerating = false,
+      onComplete: () => {
+        this.isGenerating = false;
+        this.aiFinished = true;
+      },
+      onStop: () => {
+        this.isGenerating = false;
+        this.aiFinished = true;
+      },
       onShow: (pos: number, style: { top: string, left: string }) => {
         this.aiDialogStyle = style;
         this.aiQuestion = '';
         this.aiResponseText = '';
+        this.aiFinished = false;
         this.showAIDialog = true;
       },
       onHide: () => {
         this.showAIDialog = false;
         this.isGenerating = false;
+        this.aiFinished = false;
+        this.aiResponseText = '';
+        this.aiQuestion = '';
+        this.aiApplyRange = null;
       }
     });
 
@@ -129,6 +142,18 @@ export class EditorComponent implements OnInit, OnDestroy {
     const coords = this.editor.coordsAtPos(pos);
     if (coords) {
       const editorRect = this.editorHost.nativeElement.getBoundingClientRect();
+      const view = this.editor.view;
+      const sel = view.state.selection.main;
+      if (!sel.empty) {
+        this.aiApplyRange = { from: sel.from, to: sel.to };
+      } else {
+        const char = view.state.doc.sliceString(pos, Math.min(pos + 1, view.state.doc.length));
+        if (char === '/') {
+          this.aiApplyRange = { from: pos, to: pos + 1 };
+        } else {
+          this.aiApplyRange = { from: pos, to: pos };
+        }
+      }
       this.aiPlugin.show(pos, coords, editorRect);
     }
   }
@@ -137,11 +162,30 @@ export class EditorComponent implements OnInit, OnDestroy {
     if (!this.aiQuestion || this.isGenerating) return;
 
     this.isGenerating = true;
+    this.aiFinished = false;
     this.aiPlugin.sendQuestion(this.aiQuestion);
   }
 
   stopAIResponse() {
     this.aiPlugin.stopResponse();
+  }
+
+  cancelAIResult() {
+    this.aiPlugin.hide();
+  }
+
+  insertAIResult() {
+    const view = this.editor.view;
+    const text = this.aiResponseText;
+    const range = this.aiApplyRange;
+    if (!text || !range) return;
+
+    view.dispatch({
+      changes: { from: range.from, to: range.to, insert: text },
+      selection: { anchor: range.from + text.length }
+    });
+    view.focus();
+    this.aiPlugin.hide();
   }
 
   openPluginPopup(pos: number) {

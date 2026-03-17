@@ -242,6 +242,36 @@
               animation: ai-pulse 1.5s infinite ease-in-out;
             }
           }
+
+          .ai-result-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 12px;
+
+            button {
+              padding: 6px 16px;
+              border-radius: 8px;
+              font-size: 13px;
+              font-weight: 500;
+              cursor: pointer;
+              border: 1px solid transparent;
+              transition: all 0.2s;
+            }
+
+            .btn-insert {
+              background: #8066ff;
+              color: #fff;
+              &:hover { background: #6b4dff; }
+            }
+
+            .btn-cancel {
+              background: #fff;
+              color: #4b5563;
+              border-color: #e5e7eb;
+              &:hover { background: #f9fafb; }
+            }
+          }
         }
 
         .ai-input-container {

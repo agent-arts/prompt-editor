@@ -21,9 +21,11 @@ const editingBlock = ref<EditorBlock>({ id: '', placeholder: '', presetText: '' 
 const aiResponseText = ref('');
 const aiLoading = ref(false);
 const isGenerating = ref(false);
+const aiFinished = ref(false);
 const aiDialogStyle = ref({ top: '0px', left: '0px' });
 const aiQuestion = ref('');
 const showAIDialog = ref(false);
+const aiApplyRange = ref<{ from: number, to: number } | null>(null);
 
 // 插件库相关状态
 const pluginPopupStyle = ref({ top: '0px', left: '0px' });
@@ -69,6 +71,20 @@ const openAIDialog = (pos: number) => {
   if (coords) {
     const editorRect = editorHostRef.value?.getBoundingClientRect();
     if (editorRect) {
+      const view = editor.value?.view;
+      if (view) {
+        const sel = view.state.selection.main;
+        if (!sel.empty) {
+          aiApplyRange.value = { from: sel.from, to: sel.to };
+        } else {
+          const char = view.state.doc.sliceString(pos, Math.min(pos + 1, view.state.doc.length));
+          if (char === '/') {
+            aiApplyRange.value = { from: pos, to: pos + 1 };
+          } else {
+            aiApplyRange.value = { from: pos, to: pos };
+          }
+        }
+      }
       aiPlugin.value?.show(pos, coords, editorRect);
     }
   }
@@ -90,6 +106,8 @@ const addPluginBlock = (item: any) => {
 
 const sendAIQuestion = () => {
   if (aiQuestion.value && !isGenerating.value && aiPlugin.value) {
+    isGenerating.value = true;
+    aiFinished.value = false;
     aiPlugin.value.sendQuestion(aiQuestion.value);
     aiQuestion.value = '';
   }
@@ -97,6 +115,26 @@ const sendAIQuestion = () => {
 
 const stopAIResponse = () => {
   aiPlugin.value?.stopResponse();
+}
+
+const cancelAIResult = () => {
+  aiPlugin.value?.hide();
+  aiApplyRange.value = null;
+}
+
+const insertAIResult = () => {
+  const view = editor.value?.view;
+  const text = aiResponseText.value;
+  const range = aiApplyRange.value;
+  if (!view || !text || !range) return;
+
+  view.dispatch({
+    changes: { from: range.from, to: range.to, insert: text },
+    selection: { anchor: range.from + text.length }
+  });
+  view.focus();
+  aiPlugin.value?.hide();
+  aiApplyRange.value = null;
 }
 
 const recreateEditor = (templateData: any) => {
@@ -155,12 +193,19 @@ onMounted(() => {
   aiPlugin.value = new AIDialogPlugin({
     onStream: (text) => aiResponseText.value = text,
     onLoading: (loading) => aiLoading.value = loading,
-    onComplete: () => isGenerating.value = false,
-    onStop: () => isGenerating.value = false,
+    onComplete: () => {
+      isGenerating.value = false;
+      aiFinished.value = true;
+    },
+    onStop: () => {
+      isGenerating.value = false;
+      aiFinished.value = true;
+    },
     onShow: (pos, style) => {
       aiDialogStyle.value = style;
       aiQuestion.value = '';
       aiResponseText.value = '';
+      aiFinished.value = false;
       showAIDialog.value = true;
       showPluginPopup.value = false;
       showPopup.value = false;
@@ -168,6 +213,9 @@ onMounted(() => {
     onHide: () => {
       showAIDialog.value = false;
       isGenerating.value = false;
+      aiFinished.value = false;
+      aiResponseText.value = '';
+      aiQuestion.value = '';
     }
   });
 
@@ -262,6 +310,10 @@ defineExpose({
           <div class="ai-response-content">{{ aiResponseText }}</div>
           <div v-if="aiLoading" class="ai-loading-indicator">
             <span class="dot"></span>
+          </div>
+          <div v-if="aiFinished && !aiLoading" class="ai-result-actions">
+            <button class="btn-insert" @click="insertAIResult">插入</button>
+            <button class="btn-cancel" @click="cancelAIResult">取消</button>
           </div>
         </div>
 
@@ -479,6 +531,36 @@ defineExpose({
             background: #8066ff;
             border-radius: 50%;
             animation: ai-pulse 1.5s infinite ease-in-out;
+          }
+        }
+
+        .ai-result-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 12px;
+
+          button {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+          }
+
+          .btn-insert {
+            background: #8066ff;
+            color: #fff;
+            &:hover { background: #6b4dff; }
+          }
+
+          .btn-cancel {
+            background: #fff;
+            color: #4b5563;
+            border-color: #e5e7eb;
+            &:hover { background: #f9fafb; }
           }
         }
       }
