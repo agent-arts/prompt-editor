@@ -2,13 +2,15 @@
   "name": "root-editor",
   "private": true,
   "scripts": {
-    "dev": "pnpm -F site dev",
-    "dev:ng": "pnpm -F site-ng start",
+    "dev": "concurrently \"pnpm build:watch\" \"pnpm -F site dev\"",
+    "dev:ng": "concurrently \"pnpm build:watch\" \"pnpm -F site-ng start\"",
     "build": "pnpm -F site build",
     "build:ng": "pnpm -F site-ng build",
-    "build:lib": "pnpm -F @agent-arts/editor build"
+    "build:lib": "pnpm -F @agent-arts/editor build",
+    "build:watch": "pnpm -F @agent-arts/editor build:watch"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "less": "^4.6.4"
   }
 }

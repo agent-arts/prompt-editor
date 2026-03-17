@@ -99,6 +99,30 @@ const stopAIResponse = () => {
   aiPlugin.value?.stopResponse();
 }
 
+const recreateEditor = (templateData: any) => {
+  if (editor.value) {
+    editor.value.destroy();
+  }
+
+  const initialPluginBlocks = templateData.pluginBlocks.map((item: any) => ({ pos: item.pos, block: item.block }));
+
+  const options: CustomEditorOptions = {
+    parent: editorHostRef.value!,
+    initialDoc: templateData.content,
+    initialBlocks: templateData.editorBlocks.concat(initialPluginBlocks),
+    onOpenPopup: (id, rect) => openPopup(id, rect),
+    onTriggerPluginPopup: (pos) => openPluginPopup(pos),
+    onTriggerAIDialog: (pos) => openAIDialog(pos),
+    onBlockUpdated: (id, text) => {
+      if (showPopup.value && editingBlock.value.id === id) {
+        editingBlock.value.presetText = text;
+      }
+    }
+  };
+
+  editor.value = new CustomEditor(options);
+}
+
 onMounted(() => {
   const initialBlocks = [
     {
@@ -182,7 +206,8 @@ onUnmounted(() => {
 defineExpose({
   get editor() {
     return editor.value;
-  }
+  },
+  recreateEditor
 })
 </script>
 

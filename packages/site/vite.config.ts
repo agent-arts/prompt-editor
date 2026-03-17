@@ -17,7 +17,7 @@ export default defineConfig({
             'vertical-align': 'middle'
           },
           collections: {
-            ci: () => import('@opentiny/icons/json/icons.json', { with: { type: 'json' }}).then((i) => i.default)
+            ci: () => import('@opentiny/icons/json/icons.json').then((i) => i.default)
           }
         })
       ]

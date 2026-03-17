@@ -441,15 +441,24 @@ export function createEditorView(parent: HTMLElement, state: EditorState) {
   });
 }
 
-export function getEditorData(view: EditorView, blocks: Map<string, EditorBlock>) {
+export function getEditorData(view: EditorView) {
   const content = view.state.doc.toString();
-  const blockList = Array.from(blocks.values());
-  
+  const editorBlocks: { pos: number, block: EditorBlock }[] = [];
+  const pluginBlocks: { pos: number, block: PluginBlock }[] = [];
+
+  view.state.field(blockField).between(0, view.state.doc.length, (from, to, value) => {
+    const widget = value.spec.widget;
+    if (widget instanceof BlockWidget) {
+      editorBlocks.push({ pos: from, block: widget.block });
+    } else if (widget instanceof PluginWidget) {
+      pluginBlocks.push({ pos: from, block: widget.block });
+    }
+  });
+
   return {
-    json: {
-      content,
-      blocks: blockList
-    },
+    content,
+    editorBlocks,
+    pluginBlocks,
     html: view.dom.querySelector('.cm-content')?.innerHTML || ''
   };
 }
