@@ -20,7 +20,7 @@ export interface CodeMirrorCallbacks {
 export interface CustomEditorOptions {
   parent: HTMLElement;
   initialDoc: string;
-  initialBlocks?: { pos: number, block: EditorBlock }[];
+  initialBlocks?: { pos: number, len?: number, block: EditorBlock | PluginBlock }[];
   onOpenPopup: (id: string, rect: DOMRect) => void;
   onTriggerPluginPopup: (pos: number) => void;
   onTriggerAIDialog: (pos: number) => void;
@@ -36,8 +36,19 @@ export class CustomEditor {
   constructor(options: CustomEditorOptions) {
     this.options = options;
 
+    // 解析文档中的历史变量块 {{xxx}}
+    const parsedBlocks = parseTemplateVariables(options.initialDoc);
+    const combinedInitialBlocks = [
+      ...(options.initialBlocks || []),
+      ...parsedBlocks
+    ];
+
     if (options.initialBlocks) {
-      options.initialBlocks.forEach(item => this.allBlocks.set(item.block.id, item.block));
+      options.initialBlocks.forEach(item => {
+        if (!('type' in item.block)) {
+          this.allBlocks.set((item.block as EditorBlock).id, item.block as EditorBlock);
+        }
+      });
     }
 
     const callbacks: CodeMirrorCallbacks = {
@@ -62,7 +73,7 @@ export class CustomEditor {
       }
     };
 
-    const state = createEditorState(options.initialDoc, callbacks, options.initialBlocks || []);
+    const state = createEditorState(options.initialDoc, callbacks, combinedInitialBlocks);
     
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
@@ -263,7 +274,7 @@ const callbacksFacet = Facet.define<CodeMirrorCallbacks, CodeMirrorCallbacks>({
   combine: values => values[0]
 });
 
-const initialBlocksFacet = Facet.define<{ pos: number, block: EditorBlock }[], { pos: number, block: EditorBlock }[]>({
+const initialBlocksFacet = Facet.define<{ pos: number, len?: number, block: EditorBlock | PluginBlock }[], { pos: number, len?: number, block: EditorBlock | PluginBlock }[]>({
   combine: values => values.length ? values[0] : []
 });
 
@@ -277,7 +288,7 @@ export const blockField = StateField.define<DecorationSet>({
     const deco = initialBlocks
       .slice()
       .sort((a, b) => a.pos - b.pos)
-      .map(({ pos, block }) => {
+      .map(({ pos, len, block }) => {
         let widget;
         // 判断是插件块还是编辑块
         if ('type' in block && ('name' in block)) {
@@ -285,7 +296,7 @@ export const blockField = StateField.define<DecorationSet>({
         } else {
           widget = new BlockWidget(block as EditorBlock, callbacks);
         }
-        return Decoration.replace({ widget }).range(pos, pos + 1);
+        return Decoration.replace({ widget }).range(pos, pos + (len || 1));
       });
     return Decoration.set(deco, true);
   },
@@ -409,7 +420,7 @@ export const editorTheme = EditorView.theme({
   '.cm-header-1': { fontSize: '1.5em', color: '#008c99', fontWeight: 'bold' }
 });
 
-export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, initialBlocks: { pos: number, block: EditorBlock }[] = []) {
+export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, initialBlocks: { pos: number, len?: number, block: EditorBlock | PluginBlock }[] = []) {
   const extensions = [
     history(),
     keymap.of([
@@ -448,15 +459,15 @@ export function createEditorView(parent: HTMLElement, state: EditorState) {
 
 export function getEditorData(view: EditorView) {
   const content = view.state.doc.toString();
-  const editorBlocks: { pos: number, block: EditorBlock }[] = [];
-  const pluginBlocks: { pos: number, block: PluginBlock }[] = [];
+  const editorBlocks: { pos: number, len?: number, block: EditorBlock }[] = [];
+  const pluginBlocks: { pos: number, len?: number, block: PluginBlock }[] = [];
 
   view.state.field(blockField).between(0, view.state.doc.length, (from, to, value) => {
     const widget = value.spec.widget;
     if (widget instanceof BlockWidget) {
-      editorBlocks.push({ pos: from, block: widget.block });
+      editorBlocks.push({ pos: from, len: to - from, block: widget.block });
     } else if (widget instanceof PluginWidget) {
-      pluginBlocks.push({ pos: from, block: widget.block });
+      pluginBlocks.push({ pos: from, len: to - from, block: widget.block });
     }
   });
 
@@ -466,4 +477,26 @@ export function getEditorData(view: EditorView) {
     pluginBlocks,
     html: view.dom.querySelector('.cm-content')?.innerHTML || ''
   };
+}
+
+/**
+ * 解析文档中的历史变量块 {{xxx}}
+ */
+export function parseTemplateVariables(doc: string) {
+  const blocks: { pos: number, len: number, block: PluginBlock }[] = [];
+  const regex = /\{\{(.+?)\}\}/g;
+  let match;
+
+  while ((match = regex.exec(doc)) !== null) {
+    blocks.push({
+      pos: match.index,
+      len: match[0].length,
+      block: {
+        id: `var-${match[1]}-${match.index}`,
+        name: match[1],
+        type: 'plugin'
+      }
+    });
+  }
+  return blocks;
 }

@@ -138,7 +138,7 @@ onMounted(() => {
 
   const options: CustomEditorOptions = {
     parent: editorHostRef.value!,
-    initialDoc: '# 角色\n\n你是一个  ',
+    initialDoc: '# 角色\n\n你是一个  。变量{{user_name}}。',
     initialBlocks,
     onOpenPopup: (id, rect) => openPopup(id, rect),
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
