@@ -101,7 +101,7 @@ export class CustomEditor {
 
   public addBlock() {
     const newBlock: EditorBlock = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).slice(2, 11),
       placeholder: '请输入编辑块内容为空时的提示文案',
       presetText: ''
     };
@@ -142,7 +142,7 @@ export class CustomEditor {
   }
 
   public getData() {
-    return getEditorData(this.view, this.allBlocks);
+    return getEditorData(this.view);
   }
 
   public destroy() {
@@ -200,7 +200,7 @@ class BlockWidget extends WidgetType {
       this.callbacks.updateBlockText(this.block.id, val);
     };
 
-    // 重点：当 input 获焦或点击时，触发弹窗展示
+    // 当 input 获焦或点击时，触发弹窗展示
     input.onfocus = (e) => {
       const rect = span.getBoundingClientRect();
       this.callbacks.openPopup(this.block.id, rect);
@@ -219,7 +219,7 @@ class BlockWidget extends WidgetType {
     input.onkeydown = (e) => {
       if (e.key === 'Backspace' && input.value === '') {
         e.preventDefault();
-        // Find the position of this block and remove it
+        // 查找当前块的起始位置
         let pos: number | null = null;
         view.state.field(blockField).between(0, view.state.doc.length, (from, to, value) => {
           if (value.spec.widget === this) {
@@ -241,7 +241,7 @@ class BlockWidget extends WidgetType {
     return span;
   }
 
-  override ignoreEvent(event: Event) {
+  override ignoreEvent() {
     return true;
   }
 }
@@ -266,7 +266,7 @@ class PluginWidget extends WidgetType {
     return span;
   }
 
-  override ignoreEvent(event: Event) {
+  override ignoreEvent() {
     return true;
   }
 }
@@ -349,9 +349,11 @@ export const blockField = StateField.define<DecorationSet>({
   provide: f => EditorView.decorations.from(f)
 });
 
-// Helper function to handle backspace on blocks
+/**
+ * 删除当前光标左侧的块
+ */
 const deleteBlock = (view: EditorView, callbacks: CodeMirrorCallbacks) => {
-  const { from: selFrom, to: selTo, empty } = view.state.selection.main;
+  const { from: selFrom, empty } = view.state.selection.main;
   if (!empty) return false;
 
   const pos = selFrom;
@@ -361,7 +363,7 @@ const deleteBlock = (view: EditorView, callbacks: CodeMirrorCallbacks) => {
   let blockPos: number | null = null;
   let blockLen: number = 1;
 
-  // Check if there is a block just before the cursor
+  // 查找光标左侧的块装饰器
   const field = view.state.field(blockField, false);
   if (field) {
     field.between(pos - 1, pos, (from, to, value) => {
@@ -614,6 +616,9 @@ export const markdownStyleField = StateField.define<DecorationSet>({
   provide: f => EditorView.decorations.from(f)
 });
 
+/**
+ * 创建编辑器状态
+ */
 export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, initialBlocks: { pos: number, len?: number, block: EditorBlock | PluginBlock }[] = []) {
   const extensions = [
     history(),
@@ -638,20 +643,12 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
     extensions
   });
 
-  // If there are initial blocks, we need to add them to the field.
-  // This is tricky with StateField.create. 
-  // Let's instead use a transaction if possible, or just handle them in create().
-  
   return state;
 }
 
-export function createEditorView(parent: HTMLElement, state: EditorState) {
-  return new EditorView({
-    state,
-    parent
-  });
-}
-
+/**
+ * 获取编辑器数据
+ */
 export function getEditorData(view: EditorView) {
   const content = view.state.doc.toString();
   const editorBlocks: { pos: number, len?: number, block: EditorBlock }[] = [];
