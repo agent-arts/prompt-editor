@@ -1,4 +1,4 @@
-import { EditorState, StateField, StateEffect, Facet } from '@codemirror/state';
+import { EditorState, StateField, StateEffect, Facet, Text } from '@codemirror/state';
 import { EditorView, keymap, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -422,7 +422,44 @@ export const editorTheme = EditorView.theme({
     color: '#b2a1ff',
     opacity: 0.7
   },
-  '.cm-header-1': { fontSize: '1.5em', color: '#008c99', fontWeight: 'bold' }
+  '.cm-header-1': { fontSize: '1.5em', color: '#008c99', fontWeight: 'bold' },
+  '.cm-bold': { fontWeight: 'bold' }
+});
+
+const boldDecoration = Decoration.mark({ class: 'cm-bold' });
+
+function getMarkdownStyles(doc: Text) {
+  const decorations: any[] = [];
+  
+  for (let i = 1; i <= doc.lines; i++) {
+    const line = doc.line(i);
+    const lineText = line.text;
+
+    // 标题格式（# 跟随一个空格）
+    if (/^#+\s+/.test(lineText)) {
+      decorations.push(boldDecoration.range(line.from, line.to));
+    }
+
+    // 加粗文本（**xxx**）
+    const boldRegex = /\*\*(.*?)\*\*/g;
+    let match;
+    while ((match = boldRegex.exec(lineText)) !== null) {
+      decorations.push(boldDecoration.range(line.from + match.index, line.from + match.index + match[0].length));
+    }
+  }
+  
+  return Decoration.set(decorations.sort((a, b) => a.from - b.from), true);
+}
+
+export const markdownStyleField = StateField.define<DecorationSet>({
+  create(state) {
+    return getMarkdownStyles(state.doc);
+  },
+  update(decorations, tr) {
+    if (tr.docChanged) return getMarkdownStyles(tr.state.doc);
+    return decorations.map(tr.changes);
+  },
+  provide: f => EditorView.decorations.from(f)
 });
 
 export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, initialBlocks: { pos: number, len?: number, block: EditorBlock | PluginBlock }[] = []) {
@@ -440,6 +477,7 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
     callbacksFacet.of(callbacks),
     initialBlocksFacet.of(initialBlocks),
     blockField,
+    markdownStyleField,
     editorTheme
   ];
 
