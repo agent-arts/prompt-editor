@@ -1,0 +1,39 @@
+<main>
+  <div class="content">
+    <div class="header">
+      <h1>CodeMirror 6 Custom Editor</h1>
+      <p>基于 Decoration 和 Widget 系统实现的 Coze 风格编辑块</p>
+    </div>
+    <app-editor></app-editor>
+  </div>
+</main>
+
+<router-outlet />
+
+<style>
+  main {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #fafafa;
+    min-height: 100vh;
+  }
+  .content {
+    width: 100%;
+    max-width: 1000px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  h1 {
+    font-size: 2.5rem;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+  }
+  p {
+    color: #666;
+    font-size: 1.1rem;
+  }
+</style>

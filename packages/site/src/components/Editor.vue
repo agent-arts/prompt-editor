@@ -83,10 +83,7 @@ const syncBlock = () => {
 const addPluginBlock = (item: any) => {
   if (editor.value && libraryPlugin.value) {
     const pos = libraryPlugin.value.getTriggerPos();
-    // 简单实现：将插件名插入到触发位置
-    editor.value.view.dispatch({
-      changes: { from: pos, to: pos + 1, insert: `[${item.name}]` }
-    });
+    editor.value.addPluginBlock(pos, item);
     showPluginPopup.value = false;
   }
 }

@@ -4,10 +4,10 @@
   "type": "module",
   "main": "./dist/editor.umd.cjs",
   "module": "./dist/editor.js",
-  "types": "./dist/core.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/core.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/editor.js",
       "require": "./dist/editor.umd.cjs"
     }

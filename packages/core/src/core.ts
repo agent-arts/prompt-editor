@@ -111,6 +111,7 @@ export class CustomEditor {
       selection: { anchor: pos + 1 }
     });
     this.view.focus();
+    return block;
   }
 
   public syncBlock(updatedBlock: EditorBlock) {
@@ -289,7 +290,8 @@ export const blockField = StateField.define<DecorationSet>({
     
     for (let e of tr.effects) {
       if (e.is(addBlockEffect)) {
-        const pos = tr.state.selection.main.head - 1; // Position of the inserted space
+        // 使用 selection 获取当前插入点
+        const pos = tr.state.selection.main.head - 1;
         const blockDecoration = Decoration.replace({
           widget: new BlockWidget(e.value, callbacks),
         }).range(pos, pos + 1);
@@ -316,7 +318,9 @@ export const blockField = StateField.define<DecorationSet>({
           });
         }
       } else if (e.is(addPluginBlockEffect)) {
-        const { pos, block } = e.value;
+        const { pos: originalPos, block } = e.value;
+        // 映射原始位置到当前文档位置
+        const pos = tr.changes.mapPos(originalPos);
         const pluginDecoration = Decoration.replace({
           widget: new PluginWidget(block),
         }).range(pos, pos + 1);

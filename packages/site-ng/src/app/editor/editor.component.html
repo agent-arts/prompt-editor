@@ -1,0 +1,99 @@
+<div class="editor-container">
+  <!-- 顶部工具栏 -->
+  <div class="editor-header">
+    <div class="header-title">提示词</div>
+    <div class="header-actions">
+      <button class="action-btn btn-ghost" (click)="addBlock()">
+        <i class="icon-block"></i> 编辑块
+      </button>
+      <button class="action-btn btn-primary btn-sparkle">
+        <i class="icon-sparkle"></i> 优化
+      </button>
+    </div>
+  </div>
+
+  <!-- 编辑器主体 -->
+  <div class="editor-body">
+    <div #editorHost class="editor-host"></div>
+
+    <!-- 编辑块配置弹窗 -->
+    <div *ngIf="showPopup" class="block-popup" [ngStyle]="popupStyle" (mousedown)="$event.stopPropagation()">
+      <div class="popup-content">
+        <div class="form-item">
+          <label>空白引导</label>
+          <input type="text" [(ngModel)]="editingBlock.placeholder" (ngModelChange)="syncBlock()" placeholder="请输入编辑块内容为空时的提示文案">
+        </div>
+        <div class="form-item">
+          <label>预设文本</label>
+          <input type="text" [(ngModel)]="editingBlock.presetText" (ngModelChange)="syncBlock()" placeholder="请在此处输入提示词">
+        </div>
+      </div>
+      <div class="popup-arrow"></div>
+    </div>
+
+    <!-- 插件选择弹窗 -->
+    <div *ngIf="showPluginPopup" class="plugin-popup" [ngStyle]="pluginPopupStyle" (mousedown)="$event.stopPropagation()">
+      <div class="plugin-popup-content">
+        <div class="plugin-category">
+          <div class="category-title">插件</div>
+          <div *ngFor="let item of libraryPlugin.plugins" class="plugin-item" (click)="addPluginBlock(item)">
+            <i class="icon-plugin"></i>
+            <span class="item-name">{{ item.name }}</span>
+            <button class="btn-add">添加</button>
+          </div>
+        </div>
+        <div class="plugin-category">
+          <div class="category-title">工作流</div>
+          <div *ngFor="let item of libraryPlugin.workflows" class="plugin-item" (click)="addPluginBlock(item)">
+            <i class="icon-workflow"></i>
+            <span class="item-name">{{ item.name }}</span>
+            <button class="btn-add">添加</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 对话框 -->
+    <div *ngIf="showAIDialog" class="ai-dialog" [ngStyle]="aiDialogStyle" (mousedown)="$event.stopPropagation()">
+      <div class="ai-dialog-body">
+        <!-- AI 响应内容 -->
+        <div *ngIf="aiResponseText" class="ai-response-area" #aiResponseArea>
+          <div class="ai-response-content">{{ aiResponseText }}</div>
+          <div *ngIf="aiLoading" class="ai-loading-indicator">
+            <span class="dot"></span>
+          </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="ai-input-container" [class.is-generating]="isGenerating">
+          <i class="icon-sparkle-small"></i>
+          <input 
+            type="text" 
+            [(ngModel)]="aiQuestion" 
+            (keyup.enter)="sendAIQuestion()"
+            placeholder="你希望如何编写或优化提示词？"
+            [disabled]="isGenerating"
+          >
+          <div class="ai-actions">
+            <button *ngIf="!isGenerating" class="btn-send" (click)="sendAIQuestion()" [disabled]="!aiQuestion">
+              <i class="icon-send"></i>
+            </button>
+            <button *ngIf="isGenerating" class="btn-stop" (click)="stopAIResponse()">
+              <i class="icon-stop"></i> 停止响应
+            </button>
+          </div>
+        </div>
+        
+        <div *ngIf="isGenerating || aiResponseText" class="ai-dialog-footer">
+          内容由 AI 生成，无法确保真实准确，仅供参考。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部操作栏 -->
+  <div class="editor-footer">
+    <button class="btn-secondary">确认并对比调试</button>
+    <button class="btn-primary" (click)="onConfirm()">确认</button>
+  </div>
+</div>
