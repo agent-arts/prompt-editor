@@ -1,19 +1,15 @@
 import { EditorState, StateField, StateEffect, Facet, Text } from '@codemirror/state';
 import { EditorView, keymap, Decoration, DecorationSet, WidgetType, ViewPlugin, ViewUpdate, drawSelection } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-
-// 编辑块
-export interface EditorBlock {
-  id: string;
-  placeholder: string; // 空白引导
-  presetText: string;  // 预设文本
-}
-
-export interface CodeMirrorCallbacks {
-  updateBlockText: (id: string, text: string) => void;
-  openPopup: (id: string, rect: DOMRect) => void;
-  deleteBlock: (id: string) => void;
-}
+import {
+  addBlockEffect,
+  editBlockExtensions,
+  editBlockField,
+  getEditorBlocks,
+  updateBlockEffect,
+  type CodeMirrorCallbacks,
+  type EditorBlock,
+} from './plugins/edit-block';
 
 export interface CustomEditorOptions {
   parent: HTMLElement;
@@ -75,7 +71,7 @@ export class CustomEditor {
     
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
-        update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
+        update.changes.iterChanges((fromA, _toA, _fromB, _toB, inserted) => {
           const char = inserted.sliceString(0);
           if (inserted.length === 1) {
             if (char === '{') {
@@ -151,8 +147,6 @@ export class CustomEditor {
 }
 
 // 定义用于在文档中添加和删除块的状态效果
-export const addBlockEffect = StateEffect.define<EditorBlock>();
-export const updateBlockEffect = StateEffect.define<EditorBlock>();
 export const addPluginBlockEffect = StateEffect.define<{ pos: number, block: PluginBlock }>();
 
 export interface PluginBlock {
@@ -162,90 +156,6 @@ export interface PluginBlock {
 }
 
 // 自定义 Widget
-class BlockWidget extends WidgetType {
-  constructor(public block: EditorBlock, private callbacks: CodeMirrorCallbacks) {
-    super();
-  }
-
-  override toDOM(view: EditorView) {
-    const span = document.createElement('span');
-    span.className = 'cm-inline-block';
-    span.setAttribute('data-block-id', this.block.id);
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'block-input';
-    input.value = this.block.presetText || '';
-    input.placeholder = this.block.placeholder || '请输入...';
-    
-    // 设置 input 宽度自适应
-    const measureWidth = (val: string) => {
-      const temp = document.createElement('span');
-      temp.style.visibility = 'hidden';
-      temp.style.position = 'absolute';
-      temp.style.whiteSpace = 'pre';
-      temp.style.font = 'inherit';
-      temp.textContent = val || input.placeholder;
-      document.body.appendChild(temp);
-      const width = temp.offsetWidth;
-      document.body.removeChild(temp);
-      return width + 10;
-    };
-    
-    input.style.width = `${measureWidth(input.value)}px`;
-
-    input.oninput = (e) => {
-      const val = (e.target as HTMLInputElement).value;
-      input.style.width = `${measureWidth(val)}px`;
-      this.callbacks.updateBlockText(this.block.id, val);
-    };
-
-    // 当 input 获焦或点击时，触发弹窗展示
-    input.onfocus = (e) => {
-      const rect = span.getBoundingClientRect();
-      this.callbacks.openPopup(this.block.id, rect);
-    };
-
-    input.onmousedown = (e) => {
-      e.stopPropagation();
-    };
-
-    input.onclick = (e) => {
-      e.stopPropagation();
-      const rect = span.getBoundingClientRect();
-      this.callbacks.openPopup(this.block.id, rect);
-    };
-
-    input.onkeydown = (e) => {
-      if (e.key === 'Backspace' && input.value === '') {
-        e.preventDefault();
-        // 查找当前块的起始位置
-        let pos: number | null = null;
-        view.state.field(blockField).between(0, view.state.doc.length, (from, to, value) => {
-          if (value.spec.widget === this) {
-            pos = from;
-          }
-        });
-
-        if (pos !== null) {
-          this.callbacks.deleteBlock(this.block.id);
-          view.dispatch({
-            changes: { from: pos, to: pos + 1 },
-            selection: { anchor: pos }
-          });
-        }
-      }
-    };
-
-    span.appendChild(input);
-    return span;
-  }
-
-  override ignoreEvent() {
-    return true;
-  }
-}
-
 class PluginWidget extends WidgetType {
   constructor(public block: PluginBlock) {
     super();
@@ -271,70 +181,28 @@ class PluginWidget extends WidgetType {
   }
 }
 
-const callbacksFacet = Facet.define<CodeMirrorCallbacks, CodeMirrorCallbacks>({
-  combine: values => values[0]
-});
-
-const initialBlocksFacet = Facet.define<{ pos: number, len?: number, block: EditorBlock | PluginBlock }[], { pos: number, len?: number, block: EditorBlock | PluginBlock }[]>({
+const initialPluginBlocksFacet = Facet.define<{ pos: number, len?: number, block: PluginBlock }[], { pos: number, len?: number, block: PluginBlock }[]>({
   combine: values => values.length ? values[0] : []
 });
 
-// 状态字段：管理文档中的所有块装饰器
-export const blockField = StateField.define<DecorationSet>({
+const pluginBlockField = StateField.define<DecorationSet>({
   create(state) {
-    const callbacks = state.facet(callbacksFacet);
-    const initialBlocks = state.facet(initialBlocksFacet);
+    const initialBlocks = state.facet(initialPluginBlocksFacet);
     if (!initialBlocks || initialBlocks.length === 0) return Decoration.none;
-    
+
     const deco = initialBlocks
       .slice()
       .sort((a, b) => a.pos - b.pos)
       .map(({ pos, len, block }) => {
-        let widget;
-        // 判断是插件块还是编辑块
-        if ('type' in block && ('name' in block)) {
-          widget = new PluginWidget(block as PluginBlock);
-        } else {
-          widget = new BlockWidget(block as EditorBlock, callbacks);
-        }
-        return Decoration.replace({ widget }).range(pos, pos + (len || 1));
+        return Decoration.replace({ widget: new PluginWidget(block) }).range(pos, pos + (len || 1));
       });
     return Decoration.set(deco, true);
   },
   update(decorations, tr) {
-    const callbacks = tr.state.facet(callbacksFacet);
     decorations = decorations.map(tr.changes);
     
     for (let e of tr.effects) {
-      if (e.is(addBlockEffect)) {
-        // 使用 selection 获取当前插入点
-        const pos = tr.state.selection.main.head - 1;
-        const blockDecoration = Decoration.replace({
-          widget: new BlockWidget(e.value, callbacks),
-        }).range(pos, pos + 1);
-        decorations = decorations.update({ add: [blockDecoration] });
-      } else if (e.is(updateBlockEffect)) {
-        const newBlock = e.value;
-        let pos: number | null = null;
-        decorations.between(0, tr.state.doc.length, (from, to, value) => {
-          const widget = value.spec.widget;
-          if (widget instanceof BlockWidget && widget.block.id === newBlock.id) {
-            pos = from;
-          }
-        });
-        
-        if (pos !== null) {
-          decorations = decorations.update({
-            filter: (from, to, value) => {
-              const widget = value.spec.widget;
-              return !(widget instanceof BlockWidget && widget.block.id === newBlock.id);
-            },
-            add: [Decoration.replace({
-              widget: new BlockWidget(newBlock, callbacks),
-            }).range(pos, pos + 1)]
-          });
-        }
-      } else if (e.is(addPluginBlockEffect)) {
+      if (e.is(addPluginBlockEffect)) {
         const { pos: originalPos, block } = e.value;
         // 映射原始位置到当前文档位置
         const pos = tr.changes.mapPos(originalPos);
@@ -363,19 +231,22 @@ const deleteBlock = (view: EditorView, callbacks: CodeMirrorCallbacks) => {
   let blockPos: number | null = null;
   let blockLen: number = 1;
 
-  // 查找光标左侧的块装饰器
-  const field = view.state.field(blockField, false);
-  if (field) {
+  const scanField = (field: DecorationSet | null | undefined) => {
+    if (!field) return;
     field.between(pos - 1, pos, (from, to, value) => {
-      const widget = value.spec.widget;
-      // 必须是正好在光标左侧（或覆盖光标位置）的块
+      const widget = value.spec.widget as any;
       if (widget && widget.block && widget.block.id && from < pos && to >= pos) {
         blockId = widget.block.id;
         blockPos = from;
         blockLen = to - from;
-        return false; // 找到一个就停止
+        return false;
       }
     });
+  };
+
+  scanField(view.state.field(editBlockField, false));
+  if (!blockId) {
+    scanField(view.state.field(pluginBlockField, false));
   }
 
   if (blockId && blockPos !== null) {
@@ -393,38 +264,6 @@ export const editorTheme = EditorView.theme({
   '&': { height: '100%', outline: 'none', position: 'relative' },
   '.cm-content': { padding: '20px', fontSize: '16px' },
   '.cm-line': { padding: '4px 0' },
-  '.cm-inline-block': {
-    display: 'inline-block',
-    backgroundColor: '#f3f0ff',
-    color: '#8066ff',
-    padding: '0 8px',
-    margin: '0 4px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    border: '1px solid transparent',
-    transition: 'all 0.2s',
-    fontSize: '15px',
-    verticalAlign: 'middle'
-  },
-  '.cm-inline-block:hover': {
-    backgroundColor: '#e9e4ff',
-    borderColor: '#8066ff'
-  },
-  '.block-input': {
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
-    color: 'inherit',
-    font: 'inherit',
-    padding: '4px 0',
-    width: 'auto',
-    minWidth: '20px',
-    textAlign: 'center'
-  },
-  '.block-input::placeholder': {
-    color: '#b2a1ff',
-    opacity: 0.7
-  },
   '.cm-header-1': { fontSize: '1.5em', color: '#008c99', fontWeight: 'bold' },
   '.cm-bold': { fontWeight: 'bold' },
   '.cm-ai-selection-trigger': {
@@ -620,6 +459,9 @@ export const markdownStyleField = StateField.define<DecorationSet>({
  * 创建编辑器状态
  */
 export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, initialBlocks: { pos: number, len?: number, block: EditorBlock | PluginBlock }[] = []) {
+  const editorBlocks = initialBlocks.filter((b) => !('type' in (b.block as any) && 'name' in (b.block as any))) as { pos: number, len?: number, block: EditorBlock }[];
+  const pluginBlocks = initialBlocks.filter((b) => ('type' in (b.block as any) && 'name' in (b.block as any))) as { pos: number, len?: number, block: PluginBlock }[];
+
   const extensions = [
     history(),
     keymap.of([
@@ -631,9 +473,9 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
       ...historyKeymap
     ]),
     drawSelection(),
-    callbacksFacet.of(callbacks),
-    initialBlocksFacet.of(initialBlocks),
-    blockField,
+    ...editBlockExtensions({ callbacks, initialBlocks: editorBlocks }),
+    initialPluginBlocksFacet.of(pluginBlocks),
+    pluginBlockField,
     markdownStyleField,
     editorTheme
   ];
@@ -651,14 +493,12 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
  */
 export function getEditorData(view: EditorView) {
   const content = view.state.doc.toString();
-  const editorBlocks: { pos: number, len?: number, block: EditorBlock }[] = [];
+  const editorBlocks = getEditorBlocks(view);
   const pluginBlocks: { pos: number, len?: number, block: PluginBlock }[] = [];
 
-  view.state.field(blockField).between(0, view.state.doc.length, (from, to, value) => {
+  view.state.field(pluginBlockField).between(0, view.state.doc.length, (from, to, value) => {
     const widget = value.spec.widget;
-    if (widget instanceof BlockWidget) {
-      editorBlocks.push({ pos: from, len: to - from, block: widget.block });
-    } else if (widget instanceof PluginWidget) {
+    if (widget instanceof PluginWidget) {
       pluginBlocks.push({ pos: from, len: to - from, block: widget.block });
     }
   });
