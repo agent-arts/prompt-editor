@@ -1,5 +1,5 @@
-import { EditorState, StateField, StateEffect, Facet, Text } from '@codemirror/state';
-import { EditorView, keymap, Decoration, DecorationSet, WidgetType, drawSelection } from '@codemirror/view';
+import { EditorState, StateField, StateEffect, Text } from '@codemirror/state';
+import { EditorView, keymap, Decoration, DecorationSet, drawSelection } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import {
   addBlockEffect,
@@ -11,6 +11,15 @@ import {
   type EditorBlock,
 } from './plugins/edit-block';
 import { aiDialogExtensions } from './plugins/ai-dialog';
+import {
+  addPluginBlockEffect,
+  getPluginBlocks,
+  parseTemplateVariables,
+  pluginBlockExtensions,
+  pluginBlockField,
+  pluginPopupTriggerExtensions,
+  type PluginBlock,
+} from './plugins/library-block';
 
 export interface CustomEditorOptions {
   parent: HTMLElement;
@@ -69,20 +78,11 @@ export class CustomEditor {
     };
 
     const state = createEditorState(options.initialDoc, callbacks, combinedInitialBlocks);
-    
-    const pluginPopupTriggerListener = EditorView.updateListener.of((update) => {
-      if (!update.docChanged) return;
-      update.changes.iterChanges((fromA, _toA, _fromB, _toB, inserted) => {
-        if (inserted.length !== 1) return;
-        const char = inserted.sliceString(0);
-        if (char === '{') this.options.onTriggerPluginPopup(fromA);
-      });
-    });
 
     this.view = new EditorView({
       state: state.update({
         effects: StateEffect.appendConfig.of([
-          pluginPopupTriggerListener,
+          ...pluginPopupTriggerExtensions({ onTriggerPluginPopup: (pos) => this.options.onTriggerPluginPopup(pos) }),
           ...aiDialogExtensions({ onTriggerAIDialog: (pos) => this.options.onTriggerAIDialog(pos) })
         ])
       }).state,
@@ -140,77 +140,6 @@ export class CustomEditor {
     this.view.destroy();
   }
 }
-
-// 定义用于在文档中添加和删除块的状态效果
-export const addPluginBlockEffect = StateEffect.define<{ pos: number, block: PluginBlock }>();
-
-export interface PluginBlock {
-  id: string;
-  name: string;
-  type: 'plugin' | 'workflow';
-}
-
-// 自定义 Widget
-class PluginWidget extends WidgetType {
-  constructor(public block: PluginBlock) {
-    super();
-  }
-
-  override toDOM() {
-    const span = document.createElement('span');
-    span.className = `cm-plugin-block cm-plugin-block-${this.block.type}`;
-    span.setAttribute('data-block-id', this.block.id);
-
-    const icon = document.createElement('i');
-    icon.className = this.block.type === 'plugin' ? 'icon-plugin' : 'icon-workflow';
-    span.appendChild(icon);
-
-    const text = document.createTextNode(this.block.name);
-    span.appendChild(text);
-
-    return span;
-  }
-
-  override ignoreEvent() {
-    return true;
-  }
-}
-
-const initialPluginBlocksFacet = Facet.define<{ pos: number, len?: number, block: PluginBlock }[], { pos: number, len?: number, block: PluginBlock }[]>({
-  combine: values => values.length ? values[0] : []
-});
-
-const pluginBlockField = StateField.define<DecorationSet>({
-  create(state) {
-    const initialBlocks = state.facet(initialPluginBlocksFacet);
-    if (!initialBlocks || initialBlocks.length === 0) return Decoration.none;
-
-    const deco = initialBlocks
-      .slice()
-      .sort((a, b) => a.pos - b.pos)
-      .map(({ pos, len, block }) => {
-        return Decoration.replace({ widget: new PluginWidget(block) }).range(pos, pos + (len || 1));
-      });
-    return Decoration.set(deco, true);
-  },
-  update(decorations, tr) {
-    decorations = decorations.map(tr.changes);
-    
-    for (let e of tr.effects) {
-      if (e.is(addPluginBlockEffect)) {
-        const { pos: originalPos, block } = e.value;
-        // 映射原始位置到当前文档位置
-        const pos = tr.changes.mapPos(originalPos);
-        const pluginDecoration = Decoration.replace({
-          widget: new PluginWidget(block),
-        }).range(pos, pos + 1);
-        decorations = decorations.update({ add: [pluginDecoration] });
-      }
-    }
-    return decorations;
-  },
-  provide: f => EditorView.decorations.from(f)
-});
 
 /**
  * 删除当前光标左侧的块
@@ -318,8 +247,7 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
     ]),
     drawSelection(),
     ...editBlockExtensions({ callbacks, initialBlocks: editorBlocks }),
-    initialPluginBlocksFacet.of(pluginBlocks),
-    pluginBlockField,
+    ...pluginBlockExtensions({ initialBlocks: pluginBlocks }),
     markdownStyleField,
     editorTheme
   ];
@@ -338,14 +266,7 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
 export function getEditorData(view: EditorView) {
   const content = view.state.doc.toString();
   const editorBlocks = getEditorBlocks(view);
-  const pluginBlocks: { pos: number, len?: number, block: PluginBlock }[] = [];
-
-  view.state.field(pluginBlockField).between(0, view.state.doc.length, (from, to, value) => {
-    const widget = value.spec.widget;
-    if (widget instanceof PluginWidget) {
-      pluginBlocks.push({ pos: from, len: to - from, block: widget.block });
-    }
-  });
+  const pluginBlocks = getPluginBlocks(view);
 
   return {
     content,
@@ -353,26 +274,4 @@ export function getEditorData(view: EditorView) {
     pluginBlocks,
     html: view.dom.querySelector('.cm-content')?.innerHTML || ''
   };
-}
-
-/**
- * 解析文档中的历史变量块 {{xxx}}
- */
-export function parseTemplateVariables(doc: string) {
-  const blocks: { pos: number, len: number, block: PluginBlock }[] = [];
-  const regex = /\{\{(.+?)\}\}/g;
-  let match;
-
-  while ((match = regex.exec(doc)) !== null) {
-    blocks.push({
-      pos: match.index,
-      len: match[0].length,
-      block: {
-        id: `var-${match[1]}-${match.index}`,
-        name: match[1],
-        type: 'plugin'
-      }
-    });
-  }
-  return blocks;
 }
