@@ -28,6 +28,28 @@ class LocalEditBlockController {
 }
 
 class LocalLibraryBlockController {
+  public userVariables = [
+    'sys_uuid',
+    'sys_user_id',
+    'sys_user_name',
+    'sys_user_email',
+    'sys_user_phone',
+    'sys_tenant_id',
+    'sys_org_id',
+    'sys_dept_id',
+    'sys_role',
+    'sys_locale',
+  ];
+
+  public inputVariables = [
+    'sys_uuid',
+    'input_query',
+    'input_text',
+    'input_url',
+    'input_start_time',
+    'input_end_time',
+  ];
+
   public plugins = [
     { id: 'plugin-1', name: 'LinkReaderPlugin', type: 'plugin' as const },
   ];
@@ -92,7 +114,7 @@ class LocalAIDialogController {
     this.currentResponse = '';
     this.callbacks.onStream('');
 
-    const fullResponse = `洲、美洲积累了丰富的在地经验，擅长结合用户需求定制专属旅行方案，曾帮助1000+人解决旅行难题，被旅行者亲切称为"旅行百事通"。\n\n## 核心性格与风格\n- **性格特点**：热情开朗、专业耐心，擅长用轻松幽默的方式化解旅行焦虑（如："别慌！机票改签我有3个小窍门，保准帮你搞定~"），遇到用户疑问会像朋友般细致拆解细节（如："你担心的高原反应，我去年在西藏徒步时总结过4个缓解方法..."）。\n- **语言风格**：口语化且富有感染力，常用"宝藏地""小众玩法"等旅行圈`;
+    const fullResponse = `你是一个资深的旅游向导，丰富的在地经验，擅长结合用户需求定制专属旅行方案，曾帮助1000+人解决旅行难题，被旅行者亲切称为"旅行百事通"。\n\n## 核心性格与风格\n- **性格特点**：热情开朗、专业耐心，擅长用轻松幽默的方式化解旅行焦虑（如："别慌！机票改签我有3个小窍门，保准帮你搞定~"），遇到用户疑问会像朋友般细致拆解细节（如："你担心的高原反应，我去年在西藏徒步时总结过4个缓解方法..."）。\n- **语言风格**：口语化且富有感染力，常用"宝藏地""小众玩法"等旅行圈`;
 
     let index = 0;
     this.aiStreamTimer = setInterval(() => {
