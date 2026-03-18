@@ -185,7 +185,7 @@ const deleteBlock = (view: EditorView, callbacks: CodeMirrorCallbacks) => {
 
 const editorTheme = EditorView.theme({
   '&': { height: '100%', outline: 'none', position: 'relative' },
-  '.cm-content': { padding: '20px', fontSize: '16px' },
+  '.cm-content': { padding: '20px', fontSize: '14px' },
   '.cm-line': { padding: '4px 0' },
   '.cm-header-1': { fontSize: '1.5em', color: '#008c99', fontWeight: 'bold' },
   '.cm-bold': { fontWeight: 'bold' },

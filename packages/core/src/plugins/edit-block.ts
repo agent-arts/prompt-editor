@@ -38,7 +38,7 @@ class EditBlockWidget extends WidgetType {
       document.body.appendChild(temp);
       const width = temp.offsetWidth;
       document.body.removeChild(temp);
-      return width + 10;
+      return width;
     };
 
     input.style.width = `${measureWidth(input.value)}px`;
@@ -147,23 +147,27 @@ export const editBlockField = StateField.define<DecorationSet>({
   provide: f => EditorView.decorations.from(f)
 });
 
+const editBlockColor = 'rgba(20, 118, 255, 1)';
+const editBlockBgColor = 'rgba(20, 118, 255, 0.06)';
 export const editBlockTheme = EditorView.theme({
   '.cm-inline-block': {
     display: 'inline-block',
-    backgroundColor: '#f3f0ff',
-    color: '#8066ff',
+    height: '22px',
+    lineHeight: '22px',
+    backgroundColor: editBlockBgColor,
+    color: editBlockColor,
     padding: '0 8px',
     margin: '0 4px',
     borderRadius: '4px',
     cursor: 'pointer',
     border: '1px solid transparent',
     transition: 'all 0.2s',
-    fontSize: '15px',
+    fontSize: '14px',
     verticalAlign: 'middle'
   },
   '.cm-inline-block:hover': {
-    backgroundColor: '#e9e4ff',
-    borderColor: '#8066ff'
+    backgroundColor: editBlockBgColor,
+    borderColor: 'transparent'
   },
   '.block-input': {
     background: 'transparent',
@@ -171,14 +175,18 @@ export const editBlockTheme = EditorView.theme({
     outline: 'none',
     color: 'inherit',
     font: 'inherit',
-    padding: '4px 0',
+    padding: '0',
     width: 'auto',
     minWidth: '20px',
     textAlign: 'center'
   },
   '.block-input::placeholder': {
-    color: '#b2a1ff',
-    opacity: 0.7
+    color: editBlockColor,
+    opacity: 0.5
+  },
+  '.cm-plugin-block': {
+    backgroundColor: 'rgba(228, 247, 233, 1)',
+    color: 'rgba(2, 153, 49, 1)'
   }
 });
 
