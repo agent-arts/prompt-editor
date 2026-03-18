@@ -1,17 +1,4 @@
 <div class="editor-container">
-  <!-- 顶部工具栏 -->
-  <div class="editor-header">
-    <div class="header-title">提示词</div>
-    <div class="header-actions">
-      <button class="action-btn btn-ghost" (click)="addBlock()">
-        <i class="icon-block"></i> 编辑块
-      </button>
-      <button class="action-btn btn-primary btn-sparkle">
-        <i class="icon-sparkle"></i> 优化
-      </button>
-    </div>
-  </div>
-
   <!-- 编辑器主体 -->
   <div class="editor-body">
     <div #editorHost class="editor-host"></div>
@@ -105,11 +92,5 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- 底部操作栏 -->
-  <div class="editor-footer">
-    <button class="btn-secondary">确认并对比调试</button>
-    <button class="btn-primary" (click)="onConfirm()">确认</button>
   </div>
 </div>

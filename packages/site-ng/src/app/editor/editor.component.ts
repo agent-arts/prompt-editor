@@ -51,10 +51,10 @@ class LocalLibraryBlockController {
   ];
 
   public plugins = [
-    { id: 'plugin-1', name: 'LinkReaderPlugin', type: 'plugin' as const },
+    { id: 'plugin-1', name: 'MCP服务01', type: 'plugin' as const },
   ];
   public workflows = [
-    { id: 'workflow-1', name: 'condition_1_872', type: 'workflow' as const },
+    { id: 'workflow-1', name: 'Bing搜索', type: 'workflow' as const },
   ];
 
   private triggerPos: number = 0;
@@ -202,12 +202,12 @@ export class EditorComponent implements OnInit, OnDestroy {
 
     const options: CustomEditorOptions = {
       parent: this.editorHost.nativeElement,
-      initialDoc: '# 角色\n\n你是一个  ',
+      initialDoc: '# 角色\n\n你是一个  。变量{{user_name}}。',
       initialBlocks,
-      onOpenPopup: (id, rect) => this.openPopup(id, rect),
-      onTriggerPluginPopup: (pos) => this.openPluginPopup(pos),
-      onTriggerAIDialog: (pos) => this.openAIDialog(pos),
-      onBlockUpdated: (id, text) => {
+      onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
+      onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
+      onTriggerAIDialog: (pos: number) => this.openAIDialog(pos),
+      onBlockUpdated: (id: string, text: string) => {
         if (this.showPopup && this.editingBlock.id === id) {
           this.editingBlock.presetText = text;
         }
@@ -353,6 +353,34 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.editor.addBlock();
   }
 
+  getData() {
+    return this.editor.getData();
+  }
+
+  recreateEditor(templateData: { content: string; editorBlocks: any[]; pluginBlocks: any[] }) {
+    if (this.editor) {
+      this.editor.destroy();
+    }
+
+    const initialBlocks = [...(templateData.editorBlocks || []), ...(templateData.pluginBlocks || [])];
+
+    const options: CustomEditorOptions = {
+      parent: this.editorHost.nativeElement,
+      initialDoc: templateData.content,
+      initialBlocks,
+      onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
+      onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
+      onTriggerAIDialog: (pos: number) => this.openAIDialog(pos),
+      onBlockUpdated: (id: string, text: string) => {
+        if (this.showPopup && this.editingBlock.id === id) {
+          this.editingBlock.presetText = text;
+        }
+      }
+    };
+
+    this.editor = new CustomEditor(options);
+  }
+
   syncBlock() {
     if (this.editingBlock.id) {
       this.editPlugin.updateEditingBlock(this.editingBlock);
@@ -364,12 +392,6 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.editPlugin.hide();
     this.libraryPlugin.hide();
     this.aiPlugin.hide();
-  }
-
-  onConfirm() {
-    const data = this.editor.getData();
-    console.log('--- Editor Data ---');
-    console.log(JSON.stringify(data, null, 2));
   }
 
   ngOnDestroy() {

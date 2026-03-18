@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"pnpm build:watch\" \"pnpm -F site dev\"",
-    "dev:ng": "concurrently \"pnpm build:watch\" \"pnpm -F site-ng start\"",
+    "dev:ng": "pnpm -F @agent-arts/editor build && concurrently \"pnpm build:watch\" \"pnpm -F site-ng start\"",
     "build": "pnpm -F site build",
     "build:ng": "pnpm -F site-ng build",
     "build:lib": "pnpm -F @agent-arts/editor build",

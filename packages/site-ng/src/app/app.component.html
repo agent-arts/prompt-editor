@@ -1,39 +1,38 @@
-<main>
-  <div class="content">
-    <div class="header">
-      <h1>CodeMirror 6 Custom Editor</h1>
-      <p>基于 Decoration 和 Widget 系统实现的 Coze 风格编辑块</p>
+<div class="app">
+  <div class="topbar">
+    <div class="title">提示词</div>
+    <div class="actions">
+      <button
+        class="template-btn"
+        *ngFor="let template of templates"
+        (click)="loadTemplate(template)"
+        [class.active]="currentTemplateName === template.name"
+      >
+        {{ template.name }}
+      </button>
+
+      <button class="icon-btn" type="button" title="保存为模板" (click)="saveTemplate()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+      </button>
+
+      <span class="sep">|</span>
+
+      <button class="icon-btn" type="button" title="插入编辑块" (click)="addBlock()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      </button>
     </div>
-    <app-editor></app-editor>
   </div>
-</main>
+
+  <app-editor></app-editor>
+</div>
 
 <router-outlet />
-
-<style>
-  main {
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #fafafa;
-    min-height: 100vh;
-  }
-  .content {
-    width: 100%;
-    max-width: 1000px;
-  }
-  .header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  h1 {
-    font-size: 2.5rem;
-    color: #1a1a1a;
-    margin-bottom: 0.5rem;
-  }
-  p {
-    color: #666;
-    font-size: 1.1rem;
-  }
-</style>
