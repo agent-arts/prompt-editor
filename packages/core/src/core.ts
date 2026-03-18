@@ -27,6 +27,7 @@ export interface CustomEditorOptions {
   onOpenPopup: (id: string, rect: DOMRect) => void;
   onTriggerPluginPopup: (pos: number) => void;
   onTriggerAIDialog: (pos: number) => void;
+  onChange?: (data: EditorData) => void;
   onBlockDeleted?: (id: string) => void;
   onBlockUpdated?: (id: string, text: string) => void;
 }
@@ -86,6 +87,11 @@ export class CustomEditor {
     this.view = new EditorView({
       state: state.update({
         effects: StateEffect.appendConfig.of([
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              this.options.onChange?.(this.getData());
+            }
+          }),
           ...pluginPopupTriggerExtensions({ onTriggerPluginPopup: (pos) => this.options.onTriggerPluginPopup(pos) }),
           ...aiDialogExtensions({ onTriggerAIDialog: (pos) => this.options.onTriggerAIDialog(pos) })
         ])

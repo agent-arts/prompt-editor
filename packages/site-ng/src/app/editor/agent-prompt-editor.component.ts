@@ -1,6 +1,6 @@
-import { Component, ElementRef, OnInit, ViewChild, OnDestroy, ViewEncapsulation, HostListener } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, OnDestroy, ViewEncapsulation, HostListener, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CustomEditor } from '@agent-arts/editor';
 import type { CustomEditorOptions, EditorBlock, PluginBlock } from '@agent-arts/editor';
 
@@ -155,16 +155,29 @@ class LocalAIDialogController {
 }
 
 @Component({
-  selector: 'app-editor',
+  selector: 'agent-prompt-editor',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './editor.component.html',
-  styleUrls: ['./editor.component.scss'],
-  encapsulation: ViewEncapsulation.None
+  templateUrl: './agent-prompt-editor.component.html',
+  styleUrls: ['./agent-prompt-editor.component.scss'],
+  encapsulation: ViewEncapsulation.None,
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => AgentPromptEditorComponent),
+      multi: true
+    }
+  ]
 })
-export class EditorComponent implements OnInit, OnDestroy {
+export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlValueAccessor {
   @ViewChild('editorHost', { static: true }) editorHost!: ElementRef;
   private editor!: CustomEditor;
+  private modelValue = '';
+  private pendingModelValue: string | null = null;
+  private suppressModelEmit = false;
+  private onChange: (value: string) => void = () => {};
+  private onTouched: () => void = () => {};
+  private readonly blurListener = () => this.onTouched();
 
   // 弹窗状态
   showPopup = false;
@@ -188,6 +201,25 @@ export class EditorComponent implements OnInit, OnDestroy {
   aiApplyRange: { from: number, to: number } | null = null;
   private aiPlugin!: LocalAIDialogController;
 
+  writeValue(value: string | null): void {
+    this.modelValue = value ?? '';
+    if (!this.editor) {
+      this.pendingModelValue = this.modelValue;
+      return;
+    }
+    this.applyModelString(this.modelValue);
+  }
+
+  registerOnChange(fn: (value: string) => void): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState(_isDisabled: boolean): void {}
+
   ngOnInit() {
     const initialBlocks = [
       {
@@ -200,13 +232,15 @@ export class EditorComponent implements OnInit, OnDestroy {
       }
     ];
 
+    const initialData = this.parseModelString(this.modelValue);
     const options: CustomEditorOptions = {
       parent: this.editorHost.nativeElement,
-      initialDoc: '# 角色\n\n你是一个  。变量{{user_name}}。',
-      initialBlocks,
+      initialDoc: initialData?.content ?? '# 角色\n\n你是一个  。变量{{user_name}}。',
+      initialBlocks: initialData ? [...(initialData.editorBlocks || []), ...(initialData.pluginBlocks || [])] : initialBlocks,
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onTriggerAIDialog: (pos: number) => this.openAIDialog(pos),
+      onChange: (data) => this.emitModel(data),
       onBlockUpdated: (id: string, text: string) => {
         if (this.showPopup && this.editingBlock.id === id) {
           this.editingBlock.presetText = text;
@@ -215,6 +249,11 @@ export class EditorComponent implements OnInit, OnDestroy {
     };
 
     this.editor = new CustomEditor(options);
+    this.editor.view.dom.addEventListener('blur', this.blurListener, true);
+    if (this.pendingModelValue !== null) {
+      this.applyModelString(this.pendingModelValue);
+      this.pendingModelValue = null;
+    }
 
     this.aiPlugin = new LocalAIDialogController({
       onStream: (text: string) => this.aiResponseText = text,
@@ -359,6 +398,7 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   recreateEditor(templateData: { content: string; editorBlocks: any[]; pluginBlocks: any[] }) {
     if (this.editor) {
+      this.editor.view.dom.removeEventListener('blur', this.blurListener, true);
       this.editor.destroy();
     }
 
@@ -371,6 +411,7 @@ export class EditorComponent implements OnInit, OnDestroy {
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onTriggerAIDialog: (pos: number) => this.openAIDialog(pos),
+      onChange: (data) => this.emitModel(data),
       onBlockUpdated: (id: string, text: string) => {
         if (this.showPopup && this.editingBlock.id === id) {
           this.editingBlock.presetText = text;
@@ -379,6 +420,42 @@ export class EditorComponent implements OnInit, OnDestroy {
     };
 
     this.editor = new CustomEditor(options);
+    this.editor.view.dom.addEventListener('blur', this.blurListener, true);
+  }
+
+  private applyModelString(value: string) {
+    const data = this.parseModelString(value);
+    if (!data) return;
+    this.suppressModelEmit = true;
+    this.recreateEditor(data);
+    this.suppressModelEmit = false;
+  }
+
+  private emitModel(data: any) {
+    if (this.suppressModelEmit) return;
+    const model = JSON.stringify({
+      content: data.content,
+      editorBlocks: data.editorBlocks,
+      pluginBlocks: data.pluginBlocks,
+    });
+    this.modelValue = model;
+    this.onChange(model);
+  }
+
+  private parseModelString(value: string): { content: string; editorBlocks: any[]; pluginBlocks: any[] } | null {
+    if (!value) return null;
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (typeof parsed.content !== 'string') return null;
+      return {
+        content: parsed.content,
+        editorBlocks: Array.isArray(parsed.editorBlocks) ? parsed.editorBlocks : [],
+        pluginBlocks: Array.isArray(parsed.pluginBlocks) ? parsed.pluginBlocks : [],
+      };
+    } catch {
+      return null;
+    }
   }
 
   syncBlock() {
@@ -396,6 +473,7 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.editor) {
+      this.editor.view.dom.removeEventListener('blur', this.blurListener, true);
       this.editor.destroy();
     }
     if (this.aiPlugin) {
