@@ -7,7 +7,7 @@ export interface EditorBlock {
 export interface PluginBlock {
   id: string;
   name: string;
-  type: 'plugin' | 'workflow';
+  type: 'plugin' | 'workflow' | 'variable';
 }
 
 export type InitialBlock = {

@@ -322,6 +322,11 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.closePopup();
   }
 
+  addVariableBlock(name: string) {
+    this.editor.addVariableBlock(this.libraryPlugin.getTriggerPos(), name);
+    this.closePopup();
+  }
+
   addBlock() {
     this.editor.addBlock();
   }

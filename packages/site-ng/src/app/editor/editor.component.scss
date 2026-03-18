@@ -199,6 +199,21 @@
               cursor: pointer;
             }
           }
+
+          .variable-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            &:hover { background: #f9fafb; }
+
+            .item-name {
+              flex-grow: 1;
+              font-size: 14px;
+              color: #374151;
+            }
+          }
         }
       }
     }

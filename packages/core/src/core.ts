@@ -41,9 +41,14 @@ export class CustomEditor {
 
     // 解析文档中的历史变量块 {{xxx}}
     const parsedBlocks = parseTemplateVariables(options.initialDoc);
+    const existingVariableRanges = new Set(
+      (options.initialBlocks || [])
+        .filter((b) => 'type' in (b.block as any) && (b.block as any).type === 'variable')
+        .map((b) => `${b.pos}:${b.len || 1}`)
+    );
     const combinedInitialBlocks = [
       ...(options.initialBlocks || []),
-      ...parsedBlocks
+      ...parsedBlocks.filter((b) => !existingVariableRanges.has(`${b.pos}:${b.len || 1}`))
     ];
 
     if (options.initialBlocks) {
@@ -111,6 +116,22 @@ export class CustomEditor {
       changes: { from: pos, to: pos + 1, insert: ' ' },
       effects: addPluginBlockEffect.of({ pos, block }),
       selection: { anchor: pos + 1 }
+    });
+    this.view.focus();
+    return block;
+  }
+
+  public addVariableBlock(pos: number, name: string) {
+    const token = `{{${name}}}`;
+    const block: PluginBlock = {
+      id: `var-${name}-${pos}-${Math.random().toString(36).slice(2, 8)}`,
+      name,
+      type: 'variable'
+    };
+    this.view.dispatch({
+      changes: { from: pos, to: pos + 1, insert: token },
+      effects: addPluginBlockEffect.of({ pos, len: token.length, block }),
+      selection: { anchor: pos + token.length }
     });
     this.view.focus();
     return block;

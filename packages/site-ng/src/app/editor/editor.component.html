@@ -35,6 +35,18 @@
     <div *ngIf="showPluginPopup" class="plugin-popup" [ngStyle]="pluginPopupStyle" (mousedown)="$event.stopPropagation()">
       <div class="plugin-popup-content">
         <div class="plugin-category">
+          <div class="category-title">用户变量</div>
+          <div *ngFor="let name of libraryPlugin.userVariables" class="variable-item" (click)="addVariableBlock(name)">
+            <span class="item-name">{{ name }}</span>
+          </div>
+        </div>
+        <div class="plugin-category">
+          <div class="category-title">输入参数</div>
+          <div *ngFor="let name of libraryPlugin.inputVariables" class="variable-item" (click)="addVariableBlock(name)">
+            <span class="item-name">{{ name }}</span>
+          </div>
+        </div>
+        <div class="plugin-category">
           <div class="category-title">插件</div>
           <div *ngFor="let item of libraryPlugin.plugins" class="plugin-item" (click)="addPluginBlock(item)">
             <i class="icon-plugin"></i>

@@ -4,6 +4,28 @@ import { CustomEditor } from '@agent-arts/editor'
 import type { CustomEditorOptions, EditorBlock, PluginBlock } from '@agent-arts/editor'
 
 class LocalLibraryBlockController {
+  public userVariables = [
+    'sys_uuid',
+    'sys_user_id',
+    'sys_user_name',
+    'sys_user_email',
+    'sys_user_phone',
+    'sys_tenant_id',
+    'sys_org_id',
+    'sys_dept_id',
+    'sys_role',
+    'sys_locale',
+  ];
+
+  public inputVariables = [
+    'sys_uuid',
+    'input_query',
+    'input_text',
+    'input_url',
+    'input_start_time',
+    'input_end_time',
+  ];
+
   public plugins = [
     { id: 'plugin-1', name: 'MCP服务01', type: 'plugin' as const },
   ];
@@ -199,6 +221,14 @@ const addPluginBlock = (item: PluginBlock) => {
   }
 }
 
+const addVariableBlock = (name: string) => {
+  if (editor.value && libraryPlugin.value) {
+    const pos = libraryPlugin.value.getTriggerPos();
+    editor.value.addVariableBlock(pos, name);
+    showPluginPopup.value = false;
+  }
+}
+
 const sendAIQuestion = () => {
   if (aiQuestion.value && !isGenerating.value && aiPlugin.value) {
     isGenerating.value = true;
@@ -365,6 +395,18 @@ defineExpose({
     <!-- 插件选择弹窗 -->
     <div v-if="showPluginPopup" class="plugin-popup" :style="pluginPopupStyle" @mousedown.stop>
       <div class="plugin-popup-content">
+        <div class="plugin-category">
+          <div class="category-title">用户变量</div>
+          <div v-for="name in libraryPlugin?.userVariables" :key="name" class="variable-item" @click="addVariableBlock(name)">
+            <span class="item-name">{{ name }}</span>
+          </div>
+        </div>
+        <div class="plugin-category">
+          <div class="category-title">输入参数</div>
+          <div v-for="name in libraryPlugin?.inputVariables" :key="name" class="variable-item" @click="addVariableBlock(name)">
+            <span class="item-name">{{ name }}</span>
+          </div>
+        </div>
         <div class="plugin-category">
           <div class="category-title">插件</div>
           <div v-for="item in libraryPlugin?.plugins" :key="item.name" class="plugin-item" @click="addPluginBlock(item)">
@@ -570,6 +612,21 @@ defineExpose({
             color: #4f46e5;
             font-weight: 500;
             cursor: pointer;
+          }
+        }
+
+        .variable-item {
+          display: flex;
+          align-items: center;
+          padding: 8px;
+          border-radius: 6px;
+          cursor: pointer;
+          &:hover { background: #f9fafb; }
+
+          .item-name {
+            flex-grow: 1;
+            font-size: 14px;
+            color: #374151;
           }
         }
       }
