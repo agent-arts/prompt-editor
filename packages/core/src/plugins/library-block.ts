@@ -1,16 +1,11 @@
 import type { Extension } from '@codemirror/state';
 import { Facet, StateEffect, StateField } from '@codemirror/state';
 import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemirror/view';
+import type { PluginBlock } from '../types';
 
 export interface LibraryBlockCallbacks {
   onShow: (pos: number, style: { top: string, left: string }) => void;
   onHide: () => void;
-}
-
-export interface PluginBlock {
-  id: string;
-  name: string;
-  type: 'plugin' | 'workflow';
 }
 
 export const addPluginBlockEffect = StateEffect.define<{ pos: number, block: PluginBlock }>();

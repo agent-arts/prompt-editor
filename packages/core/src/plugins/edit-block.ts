@@ -1,12 +1,7 @@
 import type { Extension } from '@codemirror/state';
 import { Facet, StateEffect, StateField } from '@codemirror/state';
 import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemirror/view';
-
-export interface EditorBlock {
-  id: string;
-  placeholder: string;
-  presetText: string;
-}
+import type { EditorBlock } from '../types';
 
 export interface CodeMirrorCallbacks {
   updateBlockText: (id: string, text: string) => void;

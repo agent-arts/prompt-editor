@@ -8,7 +8,6 @@ import {
   getEditorBlocks,
   updateBlockEffect,
   type CodeMirrorCallbacks,
-  type EditorBlock,
 } from './plugins/edit-block';
 import { aiDialogExtensions } from './plugins/ai-dialog';
 import {
@@ -18,13 +17,13 @@ import {
   pluginBlockExtensions,
   pluginBlockField,
   pluginPopupTriggerExtensions,
-  type PluginBlock,
 } from './plugins/library-block';
+import type { EditorBlock, EditorData, InitialBlock, PluginBlock } from './types';
 
 export interface CustomEditorOptions {
   parent: HTMLElement;
   initialDoc: string;
-  initialBlocks?: { pos: number, len?: number, block: EditorBlock | PluginBlock }[];
+  initialBlocks?: InitialBlock[];
   onOpenPopup: (id: string, rect: DOMRect) => void;
   onTriggerPluginPopup: (pos: number) => void;
   onTriggerAIDialog: (pos: number) => void;
@@ -132,7 +131,7 @@ export class CustomEditor {
     return this.view.coordsAtPos(pos);
   }
 
-  public getData() {
+  public getData(): EditorData {
     return getEditorData(this.view);
   }
 
@@ -184,7 +183,7 @@ const deleteBlock = (view: EditorView, callbacks: CodeMirrorCallbacks) => {
   return false;
 };
 
-export const editorTheme = EditorView.theme({
+const editorTheme = EditorView.theme({
   '&': { height: '100%', outline: 'none', position: 'relative' },
   '.cm-content': { padding: '20px', fontSize: '16px' },
   '.cm-line': { padding: '4px 0' },
@@ -217,7 +216,7 @@ function getMarkdownStyles(doc: Text) {
   return Decoration.set(decorations.sort((a, b) => a.from - b.from), true);
 }
 
-export const markdownStyleField = StateField.define<DecorationSet>({
+const markdownStyleField = StateField.define<DecorationSet>({
   create(state) {
     return getMarkdownStyles(state.doc);
   },
@@ -231,7 +230,7 @@ export const markdownStyleField = StateField.define<DecorationSet>({
 /**
  * 创建编辑器状态
  */
-export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, initialBlocks: { pos: number, len?: number, block: EditorBlock | PluginBlock }[] = []) {
+function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, initialBlocks: { pos: number, len?: number, block: EditorBlock | PluginBlock }[] = []) {
   const editorBlocks = initialBlocks.filter((b) => !('type' in (b.block as any) && 'name' in (b.block as any))) as { pos: number, len?: number, block: EditorBlock }[];
   const pluginBlocks = initialBlocks.filter((b) => ('type' in (b.block as any) && 'name' in (b.block as any))) as { pos: number, len?: number, block: PluginBlock }[];
 
@@ -263,7 +262,7 @@ export function createEditorState(initialDoc: string, callbacks: CodeMirrorCallb
 /**
  * 获取编辑器数据
  */
-export function getEditorData(view: EditorView) {
+function getEditorData(view: EditorView) {
   const content = view.state.doc.toString();
   const editorBlocks = getEditorBlocks(view);
   const pluginBlocks = getPluginBlocks(view);
