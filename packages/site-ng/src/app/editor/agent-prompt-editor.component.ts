@@ -329,8 +329,8 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
       if (!sel.empty) {
         this.aiApplyRange = { from: sel.from, to: sel.to };
       } else {
-        const char = view.state.doc.sliceString(pos, Math.min(pos + 1, view.state.doc.length));
-        if (char === '/') {
+        const insertedChar = view.state.doc.sliceString(pos, Math.min(pos + 1, view.state.doc.length));
+        if (insertedChar === '/') {
           this.aiApplyRange = { from: pos, to: pos + 1 };
         } else {
           this.aiApplyRange = { from: pos, to: pos };

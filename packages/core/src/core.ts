@@ -182,16 +182,17 @@ const deleteBlock = (view: EditorView, callbacks: CodeMirrorCallbacks) => {
   let blockLen: number = 1;
 
   const scanField = (field: DecorationSet | null | undefined) => {
-    if (!field) return;
-    field.between(pos - 1, pos, (from, to, value) => {
-      const widget = value.spec.widget as any;
-      if (widget && widget.block && widget.block.id && from < pos && to >= pos) {
-        blockId = widget.block.id;
-        blockPos = from;
-        blockLen = to - from;
-        return false;
-      }
-    });
+    if (field) {
+      field.between(pos - 1, pos, (from, to, value) => {
+        const widget = value.spec.widget as any;
+        if (widget && widget.block && widget.block.id && from < pos && to >= pos) {
+          blockId = widget.block.id;
+          blockPos = from;
+          blockLen = to - from;
+          return false;
+        }
+      });
+    }
   };
 
   scanField(view.state.field(editBlockField, false));

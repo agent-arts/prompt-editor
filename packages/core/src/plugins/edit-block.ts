@@ -38,7 +38,7 @@ class EditBlockWidget extends WidgetType {
       document.body.appendChild(temp);
       const width = temp.offsetWidth;
       document.body.removeChild(temp);
-      return width;
+      return width + 10;
     };
 
     input.style.width = `${measureWidth(input.value)}px`;
@@ -97,7 +97,9 @@ export const editBlockField = StateField.define<DecorationSet>({
   create(state) {
     const callbacks = state.facet(callbacksFacet);
     const initialBlocks = state.facet(initialBlocksFacet);
-    if (!initialBlocks || initialBlocks.length === 0) return Decoration.none;
+    if (!initialBlocks || initialBlocks.length === 0) {
+      return Decoration.none;
+    }
 
     const deco = initialBlocks
       .slice()
@@ -153,7 +155,7 @@ export const editBlockTheme = EditorView.theme({
   '.cm-inline-block': {
     display: 'inline-block',
     height: '22px',
-    lineHeight: '22px',
+    lineHeight: '18px',
     backgroundColor: editBlockBgColor,
     color: editBlockColor,
     padding: '0 8px',

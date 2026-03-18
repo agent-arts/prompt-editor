@@ -98,8 +98,8 @@ function slashAIDialogTriggerExtension(onTriggerAIDialog: (pos: number) => void)
     if (!update.docChanged) return;
     update.changes.iterChanges((fromA, _toA, _fromB, _toB, inserted) => {
       if (inserted.length !== 1) return;
-      const char = inserted.sliceString(0);
-      if (char === '/') onTriggerAIDialog(fromA);
+      const insertedChar = inserted.sliceString(0);
+      if (insertedChar === '/') onTriggerAIDialog(fromA);
     });
   });
 }
