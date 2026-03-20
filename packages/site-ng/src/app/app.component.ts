@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { AgentPromptEditorComponent } from './editor/agent-prompt-editor.component';
+import type { PluginBlock } from '@agent-arts/editor';
 
 @Component({
   selector: 'app-root',
@@ -48,6 +49,16 @@ export class AppComponent implements AfterViewInit {
 
   addBlock() {
     this.editorComponent?.addBlock();
+  }
+
+  addPluginBlock(item: PluginBlock) {
+    this.editorComponent?.addPluginBlock(item);
+    this.editorComponent?.closePopup();
+  }
+
+  addVariableBlock(name: string) {
+    this.editorComponent?.addVariableBlock(name);
+    this.editorComponent?.closePopup();
   }
 
   saveTemplate() {

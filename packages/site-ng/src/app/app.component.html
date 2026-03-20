@@ -41,7 +41,32 @@
     </ng-template>
 
     <ng-template #pluginPopup let-comp let-library="library" let-style="style">
-      <div>自定义插件弹窗（变量数：{{ library.userVariables.length }}）</div>
+      <div class="plugin-category">
+        <div class="category-title">用户变量</div>
+        <div *ngFor="let name of library.userVariables" class="variable-item" (click)="addVariableBlock(name)">
+          <span class="item-name">{{ name }}</span>
+        </div>
+      </div>
+      <div class="plugin-category">
+        <div class="category-title">输入参数</div>
+        <div *ngFor="let name of library.inputVariables" class="variable-item" (click)="addVariableBlock(name)">
+          <span class="item-name">{{ name }}</span>
+        </div>
+      </div>
+      <div class="plugin-category">
+        <div class="category-title">插件</div>
+        <div *ngFor="let item of library.plugins" class="plugin-item" (click)="addPluginBlock(item)">
+          <img src="assets/images/icon-mcp.svg" alt="plugin-icon">
+          <span class="item-name">{{ item.name }}</span>
+        </div>
+      </div>
+      <div class="plugin-category">
+        <div class="category-title">工作流</div>
+        <div *ngFor="let item of library.workflows" class="plugin-item" (click)="addPluginBlock(item)">
+          <img src="assets/images/icon-workflow.svg" alt="workflow-icon">
+          <span class="item-name">{{ item.name }}</span>
+        </div>
+      </div>
     </ng-template>
 
     <ng-template #aiDialog let-comp let-style="style">

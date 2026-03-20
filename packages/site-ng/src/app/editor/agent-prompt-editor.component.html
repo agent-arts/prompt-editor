@@ -34,32 +34,7 @@
           [ngTemplateOutletContext]="{ $implicit: this, library: libraryPlugin, style: pluginPopupStyle }"
         ></ng-container>
         <ng-template #defaultPluginPopup>
-          <div class="plugin-category">
-            <div class="category-title">用户变量</div>
-            <div *ngFor="let name of libraryPlugin.userVariables" class="variable-item" (click)="addVariableBlock(name)">
-              <span class="item-name">{{ name }}</span>
-            </div>
-          </div>
-          <div class="plugin-category">
-            <div class="category-title">输入参数</div>
-            <div *ngFor="let name of libraryPlugin.inputVariables" class="variable-item" (click)="addVariableBlock(name)">
-              <span class="item-name">{{ name }}</span>
-            </div>
-          </div>
-          <div class="plugin-category">
-            <div class="category-title">插件</div>
-            <div *ngFor="let item of libraryPlugin.plugins" class="plugin-item" (click)="addPluginBlock(item)">
-              <img src="assets/images/icon-mcp.svg" alt="plugin-icon">
-              <span class="item-name">{{ item.name }}</span>
-            </div>
-          </div>
-          <div class="plugin-category">
-            <div class="category-title">工作流</div>
-            <div *ngFor="let item of libraryPlugin.workflows" class="plugin-item" (click)="addPluginBlock(item)">
-              <img src="assets/images/icon-workflow.svg" alt="workflow-icon">
-              <span class="item-name">{{ item.name }}</span>
-            </div>
-          </div>
+          暂无已配置的技能或变量
         </ng-template>
       </div>
     </div>
