@@ -74,8 +74,8 @@ importers:
   packages/site-ng:
     dependencies:
       '@agent-arts/editor':
-        specifier: workspace:*
-        version: link:../core
+        specifier: ^0.1.0
+        version: 0.1.1
       '@angular/animations':
         specifier: ^18.2.0
         version: 18.2.14(@angular/core@18.2.14(rxjs@7.8.2)(zone.js@0.14.10))
@@ -175,6 +175,9 @@ importers:
         version: 5.5.4
 
 packages:
+
+  '@agent-arts/editor@0.1.1':
+    resolution: {integrity: sha512-8c3cQ5KiXhQmxHcWhTH7MOu9G863CoA3wLrR+EDbqBtk18qsHJLrFBPzAPz3TB5cHaz2UHyUx+54Xv/1UjbizA==}
 
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
@@ -5213,6 +5216,12 @@ packages:
 
 snapshots:
 
+  '@agent-arts/editor@0.1.1':
+    dependencies:
+      '@codemirror/commands': 6.10.3
+      '@codemirror/state': 6.6.0
+      '@codemirror/view': 6.40.0
+
   '@ampproject/remapping@2.3.0':
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
@@ -5229,7 +5238,7 @@ snapshots:
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.1802.21(chokidar@3.6.0)
-      '@angular-devkit/build-webpack': 0.1802.21(chokidar@3.6.0)(webpack-dev-server@5.2.2(tslib@2.6.3)(webpack@5.94.0(esbuild@0.23.0)))(webpack@5.94.0(esbuild@0.23.0))
+      '@angular-devkit/build-webpack': 0.1802.21(chokidar@3.6.0)(webpack-dev-server@5.2.2(tslib@2.6.3)(webpack@5.94.0))(webpack@5.94.0(esbuild@0.23.0))
       '@angular-devkit/core': 18.2.21(chokidar@3.6.0)
       '@angular/build': 18.2.21(@angular/compiler-cli@18.2.14(@angular/compiler@18.2.14(@angular/core@18.2.14(rxjs@7.8.2)(zone.js@0.14.10)))(typescript@5.5.4))(@types/node@22.19.15)(chokidar@3.6.0)(less@4.2.0)(postcss@8.4.41)(terser@5.31.6)(typescript@5.5.4)
       '@angular/compiler-cli': 18.2.14(@angular/compiler@18.2.14(@angular/core@18.2.14(rxjs@7.8.2)(zone.js@0.14.10)))(typescript@5.5.4)
@@ -5285,8 +5294,8 @@ snapshots:
       typescript: 5.5.4
       watchpack: 2.4.1
       webpack: 5.94.0(esbuild@0.23.0)
-      webpack-dev-middleware: 7.4.2(tslib@2.6.3)(webpack@5.94.0(esbuild@0.23.0))
-      webpack-dev-server: 5.2.2(tslib@2.6.3)(webpack@5.94.0(esbuild@0.23.0))
+      webpack-dev-middleware: 7.4.2(tslib@2.6.3)(webpack@5.94.0)
+      webpack-dev-server: 5.2.2(tslib@2.6.3)(webpack@5.94.0)
       webpack-merge: 6.0.1
       webpack-subresource-integrity: 5.1.0(webpack@5.94.0(esbuild@0.23.0))
     optionalDependencies:
@@ -5310,12 +5319,12 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@angular-devkit/build-webpack@0.1802.21(chokidar@3.6.0)(webpack-dev-server@5.2.2(tslib@2.6.3)(webpack@5.94.0(esbuild@0.23.0)))(webpack@5.94.0(esbuild@0.23.0))':
+  '@angular-devkit/build-webpack@0.1802.21(chokidar@3.6.0)(webpack-dev-server@5.2.2(tslib@2.6.3)(webpack@5.94.0))(webpack@5.94.0(esbuild@0.23.0))':
     dependencies:
       '@angular-devkit/architect': 0.1802.21(chokidar@3.6.0)
       rxjs: 7.8.1
       webpack: 5.94.0(esbuild@0.23.0)
-      webpack-dev-server: 5.2.2(tslib@2.6.3)(webpack@5.94.0(esbuild@0.23.0))
+      webpack-dev-server: 5.2.2(tslib@2.6.3)(webpack@5.94.0)
     transitivePeerDependencies:
       - chokidar
 
@@ -10803,7 +10812,7 @@ snapshots:
 
   weak-lru-cache@1.2.2: {}
 
-  webpack-dev-middleware@7.4.2(tslib@2.6.3)(webpack@5.94.0(esbuild@0.23.0)):
+  webpack-dev-middleware@7.4.2(tslib@2.6.3)(webpack@5.94.0):
     dependencies:
       colorette: 2.0.20
       memfs: 4.56.11(tslib@2.6.3)
@@ -10816,7 +10825,7 @@ snapshots:
     transitivePeerDependencies:
       - tslib
 
-  webpack-dev-server@5.2.2(tslib@2.6.3)(webpack@5.94.0(esbuild@0.23.0)):
+  webpack-dev-server@5.2.2(tslib@2.6.3)(webpack@5.94.0):
     dependencies:
       '@types/bonjour': 3.5.13
       '@types/connect-history-api-fallback': 1.5.4
@@ -10844,7 +10853,7 @@ snapshots:
       serve-index: 1.9.2
       sockjs: 0.3.24
       spdy: 4.0.2
-      webpack-dev-middleware: 7.4.2(tslib@2.6.3)(webpack@5.94.0(esbuild@0.23.0))
+      webpack-dev-middleware: 7.4.2(tslib@2.6.3)(webpack@5.94.0)
       ws: 8.19.0
     optionalDependencies:
       webpack: 5.94.0(esbuild@0.23.0)

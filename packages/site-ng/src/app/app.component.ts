@@ -32,7 +32,7 @@ export class AppComponent implements AfterViewInit {
     }
 
     this.editorModel = JSON.stringify({
-      content: '# 角色\n\n你是一个  。变量{{user_name}}。',
+      content: '# 角色\n\n你是一个  。变量{{user_name}}。--test',
       editorBlocks: [
         {
           pos: 11,

@@ -78,22 +78,11 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
   setDisabledState(_isDisabled: boolean): void {}
 
   ngOnInit() {
-    const initialBlocks = [
-      {
-        pos: 11,
-        block: {
-          id: 'init-block-1',
-          placeholder: '请输入...',
-          presetText: '智能助手'
-        }
-      }
-    ];
-
     const initialData = this.parseModelString(this.modelValue);
     const options: CustomEditorOptions = {
       parent: this.editorHost.nativeElement,
-      initialDoc: initialData?.content ?? '# 角色\n\n你是一个  。变量{{user_name}}。',
-      initialBlocks: initialData ? [...(initialData.editorBlocks || []), ...(initialData.pluginBlocks || [])] : initialBlocks,
+      initialDoc: initialData?.content ?? '',
+      initialBlocks: [...(initialData?.editorBlocks || []), ...(initialData?.pluginBlocks || [])],
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onHidePluginPopup: () => this.closePopup(),
