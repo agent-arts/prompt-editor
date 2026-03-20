@@ -239,6 +239,7 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
       initialBlocks: initialData ? [...(initialData.editorBlocks || []), ...(initialData.pluginBlocks || [])] : initialBlocks,
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
+      onHidePluginPopup: () => this.libraryPlugin?.hide(),
       onTriggerAIDialog: (pos: number) => this.openAIDialog(pos),
       onChange: (data) => this.emitModel(data),
       onBlockUpdated: (id: string, text: string) => {
@@ -410,6 +411,7 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
       initialBlocks,
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
+      onHidePluginPopup: () => this.libraryPlugin?.hide(),
       onTriggerAIDialog: (pos: number) => this.openAIDialog(pos),
       onChange: (data) => this.emitModel(data),
       onBlockUpdated: (id: string, text: string) => {

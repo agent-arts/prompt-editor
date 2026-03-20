@@ -36,7 +36,7 @@
         <div class="plugin-category">
           <div class="category-title">插件</div>
           <div *ngFor="let item of libraryPlugin.plugins" class="plugin-item" (click)="addPluginBlock(item)">
-            <img src="images/icon-mcp.svg" alt="plugin-icon">
+            <img src="assets/images/icon-mcp.svg" alt="plugin-icon">
             <span class="item-name">{{ item.name }}</span>
             <button class="btn-add">添加</button>
           </div>
@@ -44,7 +44,7 @@
         <div class="plugin-category">
           <div class="category-title">工作流</div>
           <div *ngFor="let item of libraryPlugin.workflows" class="plugin-item" (click)="addPluginBlock(item)">
-            <img src="images/icon-workflow.svg" alt="workflow-icon">
+            <img src="assets/images/icon-workflow.svg" alt="workflow-icon">
             <span class="item-name">{{ item.name }}</span>
             <button class="btn-add">添加</button>
           </div>

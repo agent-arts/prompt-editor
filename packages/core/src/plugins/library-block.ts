@@ -85,15 +85,27 @@ export function pluginBlockExtensions(options: {
 
 export function pluginPopupTriggerExtensions(options: {
   onTriggerPluginPopup: (pos: number) => void;
+  onHidePluginPopup?: () => void;
 }): Extension[] {
   return [
     EditorView.updateListener.of((update) => {
       if (!update.docChanged) return;
+      let shouldHide = false;
       update.changes.iterChanges((fromA, _toA, _fromB, _toB, inserted) => {
+        const insertedText = inserted.sliceString(0);
+        const removedText = update.startState.doc.sliceString(fromA, _toA);
+
+        if (removedText.includes('{') && !insertedText.includes('{')) {
+          shouldHide = true;
+        }
+
         if (inserted.length !== 1) return;
-        const insertedChar = inserted.sliceString(0);
-        if (insertedChar === '{') options.onTriggerPluginPopup(fromA);
+        if (insertedText === '{') options.onTriggerPluginPopup(fromA);
       });
+
+      if (shouldHide) {
+        options.onHidePluginPopup?.();
+      }
     }),
   ];
 }

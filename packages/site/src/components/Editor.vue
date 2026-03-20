@@ -276,6 +276,7 @@ const recreateEditor = (templateData: any) => {
     initialBlocks: initialBlocks,
     onOpenPopup: (id, rect) => openPopup(id, rect),
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
+    onHidePluginPopup: () => libraryPlugin.value?.hide(),
     onTriggerAIDialog: (pos) => openAIDialog(pos),
     onBlockUpdated: (id, text) => {
       if (showPopup.value && editingBlock.value.id === id) {
@@ -305,6 +306,7 @@ onMounted(() => {
     initialBlocks,
     onOpenPopup: (id, rect) => openPopup(id, rect),
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
+    onHidePluginPopup: () => libraryPlugin.value?.hide(),
     onTriggerAIDialog: (pos) => openAIDialog(pos),
     onBlockUpdated: (id, text) => {
       if (showPopup.value && editingBlock.value.id === id) {
