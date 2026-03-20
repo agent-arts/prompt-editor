@@ -1,6 +1,6 @@
 {
   "name": "@agent-arts/editor",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A prompt editor based on CodeMirror 6, support Vue.js 3 and Angular.",
   "author": "AgentArts Team",
   "license": "MIT",
