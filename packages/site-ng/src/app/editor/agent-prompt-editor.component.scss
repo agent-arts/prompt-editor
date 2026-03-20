@@ -160,6 +160,10 @@
       padding: 12px;
 
       .plugin-popup-content {
+        max-height: 60vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+
         .plugin-category {
           margin-bottom: 12px;
           .category-title {

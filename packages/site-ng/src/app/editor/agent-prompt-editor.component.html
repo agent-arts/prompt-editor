@@ -38,7 +38,6 @@
           <div *ngFor="let item of libraryPlugin.plugins" class="plugin-item" (click)="addPluginBlock(item)">
             <img src="assets/images/icon-mcp.svg" alt="plugin-icon">
             <span class="item-name">{{ item.name }}</span>
-            <button class="btn-add">添加</button>
           </div>
         </div>
         <div class="plugin-category">
@@ -46,7 +45,6 @@
           <div *ngFor="let item of libraryPlugin.workflows" class="plugin-item" (click)="addPluginBlock(item)">
             <img src="assets/images/icon-workflow.svg" alt="workflow-icon">
             <span class="item-name">{{ item.name }}</span>
-            <button class="btn-add">添加</button>
           </div>
         </div>
       </div>

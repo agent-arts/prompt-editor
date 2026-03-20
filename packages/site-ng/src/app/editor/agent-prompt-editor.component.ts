@@ -33,12 +33,6 @@ class LocalLibraryBlockController {
     'sys_user_id',
     'sys_user_name',
     'sys_user_email',
-    'sys_user_phone',
-    'sys_tenant_id',
-    'sys_org_id',
-    'sys_dept_id',
-    'sys_role',
-    'sys_locale',
   ];
 
   public inputVariables = [
@@ -46,8 +40,6 @@ class LocalLibraryBlockController {
     'input_query',
     'input_text',
     'input_url',
-    'input_start_time',
-    'input_end_time',
   ];
 
   public plugins = [
