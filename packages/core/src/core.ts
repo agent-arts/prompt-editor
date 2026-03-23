@@ -42,25 +42,26 @@ export class CustomEditor {
   constructor(options: CustomEditorOptions) {
     this.options = options;
 
+    const { doc: initialDoc, initialBlocks: initialBlocksFromDoc } = parseEditorContentString(options.initialDoc);
+    const allInitialBlocks: InitialBlock[] = [...(options.initialBlocks || []), ...initialBlocksFromDoc];
+
     // 解析文档中的历史变量块 {{xxx}}
-    const parsedBlocks = parseTemplateVariables(options.initialDoc);
+    const parsedBlocks = parseTemplateVariables(initialDoc);
     const existingVariableRanges = new Set(
-      (options.initialBlocks || [])
+      allInitialBlocks
         .filter((b) => 'type' in (b.block as any) && (b.block as any).type === 'variable')
         .map((b) => `${b.pos}:${b.len || 1}`)
     );
     const combinedInitialBlocks = [
-      ...(options.initialBlocks || []),
+      ...allInitialBlocks,
       ...parsedBlocks.filter((b) => !existingVariableRanges.has(`${b.pos}:${b.len || 1}`))
     ];
 
-    if (options.initialBlocks) {
-      options.initialBlocks.forEach(item => {
-        if (!('type' in item.block)) {
-          this.allBlocks.set((item.block as EditorBlock).id, item.block as EditorBlock);
-        }
-      });
-    }
+    combinedInitialBlocks.forEach(item => {
+      if (!('type' in item.block)) {
+        this.allBlocks.set((item.block as EditorBlock).id, item.block as EditorBlock);
+      }
+    });
 
     const callbacks: CodeMirrorCallbacks = {
       updateBlockText: (id, text) => {
@@ -84,7 +85,7 @@ export class CustomEditor {
       }
     };
 
-    const state = createEditorState(options.initialDoc, callbacks, combinedInitialBlocks);
+    const state = createEditorState(initialDoc, callbacks, combinedInitialBlocks);
 
     this.view = new EditorView({
       state: state.update({
@@ -167,7 +168,7 @@ export class CustomEditor {
   }
 
   public getData(): EditorData {
-    return getEditorData(this.view);
+    return serializeEditorContentString(this.view, this.allBlocks);
   }
 
   public destroy() {
@@ -296,18 +297,132 @@ function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, i
   return state;
 }
 
-/**
- * 获取编辑器数据
- */
-function getEditorData(view: EditorView) {
-  const content = view.state.doc.toString();
-  const editorBlocks = getEditorBlocks(view);
-  const pluginBlocks = getPluginBlocks(view);
+function escapeAttrValue(value: string) {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t');
+}
 
-  return {
-    content,
-    editorBlocks,
-    pluginBlocks,
-    html: view.dom.querySelector('.cm-content')?.innerHTML || ''
-  };
+function unescapeAttrValue(value: string) {
+  return value
+    .replace(/\\t/g, '\t')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\');
+}
+
+function parseAttributes(attrsText: string) {
+  const attrs: Record<string, string> = {};
+  const regex = /([a-zA-Z_][\w-]*)="((?:\\.|[^"])*)"/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(attrsText)) !== null) {
+    attrs[match[1]] = unescapeAttrValue(match[2]);
+  }
+  return attrs;
+}
+
+function parseEditorContentString(input: string): { doc: string; initialBlocks: InitialBlock[] } {
+  const initialBlocks: InitialBlock[] = [];
+  let doc = '';
+  let i = 0;
+
+  while (i < input.length) {
+    if (input.startsWith('{#EditorBlock', i) || input.startsWith('{#PluginBlock', i)) {
+      const openEnd = input.indexOf('#}', i);
+      if (openEnd === -1) {
+        doc += input[i];
+        i += 1;
+        continue;
+      }
+
+      const openTag = input.slice(i + 2, openEnd);
+      const firstSpace = openTag.indexOf(' ');
+      const tagName = (firstSpace === -1 ? openTag : openTag.slice(0, firstSpace)).trim();
+      const attrsText = firstSpace === -1 ? '' : openTag.slice(firstSpace + 1);
+      const attrs = parseAttributes(attrsText);
+      const closeTag = `{#/${tagName}#}`;
+      const innerStart = openEnd + 2;
+      const closeIndex = input.indexOf(closeTag, innerStart);
+      if (closeIndex === -1) {
+        doc += input[i];
+        i += 1;
+        continue;
+      }
+
+      const innerText = input.slice(innerStart, closeIndex);
+      const pos = doc.length;
+      doc += ' ';
+
+      if (tagName === 'EditorBlock') {
+        const text = innerText;
+        const block: EditorBlock = {
+          id: attrs.id || `block-${pos}`,
+          placeholder: attrs.placeholder || '',
+          presetText: text || (typeof attrs.presetText === 'string' ? attrs.presetText : '')
+        };
+        initialBlocks.push({ pos, len: 1, block });
+      } else if (tagName === 'PluginBlock') {
+        const blockType = attrs.type === 'workflow' ? 'workflow' : 'plugin';
+        const block: PluginBlock = {
+          id: attrs.id || `plugin-${pos}`,
+          type: blockType,
+          name: innerText
+        };
+        initialBlocks.push({ pos, len: 1, block });
+      } else {
+        doc = doc.slice(0, pos) + input.slice(i, closeIndex + closeTag.length);
+      }
+
+      i = closeIndex + closeTag.length;
+      continue;
+    }
+
+    doc += input[i];
+    i += 1;
+  }
+
+  return { doc, initialBlocks };
+}
+
+function serializeEditorContentString(view: EditorView, allBlocks: Map<string, EditorBlock>) {
+  const doc = view.state.doc.toString();
+  const editorBlocks = getEditorBlocks(view)
+    .map((b) => {
+      const latest = allBlocks.get(b.block.id);
+      return latest ? { ...b, block: latest } : b;
+    });
+  const pluginBlocks = getPluginBlocks(view).filter((b) => b.block.type !== 'variable');
+
+  const replacements: { from: number; to: number; text: string }[] = [];
+
+  for (const { pos, len, block } of editorBlocks) {
+    const from = pos;
+    const to = pos + (len || 1);
+    const text = `{#EditorBlock id="${escapeAttrValue(block.id)}" placeholder="${escapeAttrValue(block.placeholder)}"#}${block.presetText}{#/EditorBlock#}`;
+    replacements.push({ from, to, text });
+  }
+
+  for (const { pos, len, block } of pluginBlocks) {
+    const from = pos;
+    const to = pos + (len || 1);
+    const text = `{#PluginBlock id="${escapeAttrValue(block.id)}" type="${escapeAttrValue(block.type)}"#}${block.name}{#/PluginBlock#}`;
+    replacements.push({ from, to, text });
+  }
+
+  replacements.sort((a, b) => a.from - b.from || b.to - b.from - (a.to - a.from));
+
+  let result = '';
+  let cursor = 0;
+  for (const r of replacements) {
+    if (r.from < cursor) continue;
+    result += doc.slice(cursor, r.from);
+    result += r.text;
+    cursor = r.to;
+  }
+  result += doc.slice(cursor);
+  return result;
 }

@@ -16,9 +16,4 @@ export type InitialBlock = {
   block: EditorBlock | PluginBlock;
 };
 
-export type EditorData = {
-  content: string;
-  editorBlocks: { pos: number; len?: number; block: EditorBlock }[];
-  pluginBlocks: { pos: number; len?: number; block: PluginBlock }[];
-  html: string;
-};
+export type EditorData = string;

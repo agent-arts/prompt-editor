@@ -34,12 +34,75 @@ const saveTemplate = () => {
   }
 }
 
+const escapeAttrValue = (value: string) => {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t');
+}
+
+const legacyDataToString = (data: any) => {
+  const content = typeof data?.content === 'string' ? data.content : '';
+  const editorBlocks = Array.isArray(data?.editorBlocks) ? data.editorBlocks : [];
+  const pluginBlocks = Array.isArray(data?.pluginBlocks) ? data.pluginBlocks : [];
+
+  const replacements: { from: number; to: number; text: string }[] = [];
+
+  for (const b of editorBlocks) {
+    const pos = b?.pos;
+    if (typeof pos !== 'number') continue;
+    const len = typeof b?.len === 'number' ? b.len : 1;
+    const block = b?.block || {};
+    const id = typeof block.id === 'string' ? block.id : `block-${pos}`;
+    const placeholder = typeof block.placeholder === 'string' ? block.placeholder : '';
+    const presetText = typeof block.presetText === 'string' ? block.presetText : '';
+    const text = `{#EditorBlock id="${escapeAttrValue(id)}" placeholder="${escapeAttrValue(placeholder)}"#}${presetText}{#/EditorBlock#}`;
+    replacements.push({ from: pos, to: pos + len, text });
+  }
+
+  for (const b of pluginBlocks) {
+    const pos = b?.pos;
+    if (typeof pos !== 'number') continue;
+    const len = typeof b?.len === 'number' ? b.len : 1;
+    const block = b?.block || {};
+    if (block.type === 'variable') continue;
+    const id = typeof block.id === 'string' ? block.id : `plugin-${pos}`;
+    const type = block.type === 'workflow' ? 'workflow' : 'plugin';
+    const name = typeof block.name === 'string' ? block.name : '';
+    const text = `{#PluginBlock id="${escapeAttrValue(id)}" type="${escapeAttrValue(type)}"#}${name}{#/PluginBlock#}`;
+    replacements.push({ from: pos, to: pos + len, text });
+  }
+
+  replacements.sort((a, b) => a.from - b.from || b.to - b.from - (a.to - a.from));
+
+  let result = '';
+  let cursor = 0;
+  for (const r of replacements) {
+    if (r.from < cursor) continue;
+    result += content.slice(cursor, r.from);
+    result += r.text;
+    cursor = r.to;
+  }
+  result += content.slice(cursor);
+  return result;
+}
+
+const normalizeTemplateData = (data: any) => {
+  if (typeof data === 'string') return data;
+  if (data && typeof data === 'object' && typeof data.content === 'string') {
+    return legacyDataToString(data);
+  }
+  return '';
+}
+
 const loadTemplate = (template: any) => {
   console.log('template', template, template.data);
   
   currentTemplateName.value = template.name;
   // 销毁并重新创建 editor 实例来加载模板
-  editorRef.value.recreateEditor(template.data);
+  editorRef.value.recreateEditor(normalizeTemplateData(template.data));
 }
 
 const printData = () => {

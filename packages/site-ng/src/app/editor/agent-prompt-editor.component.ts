@@ -78,11 +78,10 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
   setDisabledState(_isDisabled: boolean): void {}
 
   ngOnInit() {
-    const initialData = this.parseModelString(this.modelValue);
+    const initialContent = this.parseModelString(this.modelValue);
     const options: CustomEditorOptions = {
       parent: this.editorHost.nativeElement,
-      initialDoc: initialData?.content ?? '',
-      initialBlocks: [...(initialData?.editorBlocks || []), ...(initialData?.pluginBlocks || [])],
+      initialDoc: initialContent ?? '',
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onHidePluginPopup: () => this.closePopup(),
@@ -264,18 +263,15 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
     return this.editor.getData();
   }
 
-  recreateEditor(templateData: { content: string; editorBlocks: any[]; pluginBlocks: any[] }) {
+  recreateEditor(content: string) {
     if (this.editor) {
       this.editor.view.dom.removeEventListener('blur', this.blurListener, true);
       this.editor.destroy();
     }
 
-    const initialBlocks = [...(templateData.editorBlocks || []), ...(templateData.pluginBlocks || [])];
-
     const options: CustomEditorOptions = {
       parent: this.editorHost.nativeElement,
-      initialDoc: templateData.content,
-      initialBlocks,
+      initialDoc: content,
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onHidePluginPopup: () => this.closePopup(),
@@ -300,38 +296,22 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
   }
 
   private applyModelString(value: string) {
-    const data = this.parseModelString(value);
-    if (!data) return;
+    const content = this.parseModelString(value);
+    if (content === null) return;
     this.suppressModelEmit = true;
-    this.recreateEditor(data);
+    this.recreateEditor(content);
     this.suppressModelEmit = false;
   }
 
-  private emitModel(data: any) {
+  private emitModel(content: string) {
     if (this.suppressModelEmit) return;
-    const model = JSON.stringify({
-      content: data.content,
-      editorBlocks: data.editorBlocks,
-      pluginBlocks: data.pluginBlocks,
-    });
-    this.modelValue = model;
-    this.onChange(model);
+    this.modelValue = content;
+    this.onChange(content);
   }
 
-  private parseModelString(value: string): { content: string; editorBlocks: any[]; pluginBlocks: any[] } | null {
+  private parseModelString(value: string): string | null {
     if (!value) return null;
-    try {
-      const parsed = JSON.parse(value);
-      if (!parsed || typeof parsed !== 'object') return null;
-      if (typeof parsed.content !== 'string') return null;
-      return {
-        content: parsed.content,
-        editorBlocks: Array.isArray(parsed.editorBlocks) ? parsed.editorBlocks : [],
-        pluginBlocks: Array.isArray(parsed.pluginBlocks) ? parsed.pluginBlocks : [],
-      };
-    } catch {
-      return null;
-    }
+    return value;
   }
 
   syncBlock() {

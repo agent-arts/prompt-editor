@@ -254,18 +254,14 @@ const insertAIResult = () => {
   aiApplyRange.value = null;
 }
 
-const recreateEditor = (templateData: any) => {
+const recreateEditor = (content: string) => {
   if (editor.value) {
     editor.value.destroy();
   }
 
-  // 合并 editorBlocks 和 pluginBlocks
-  const initialBlocks = [...templateData.editorBlocks, ...templateData.pluginBlocks];
-
   const options: CustomEditorOptions = {
     parent: editorHostRef.value!,
-    initialDoc: templateData.content,
-    initialBlocks: initialBlocks,
+    initialDoc: content,
     onOpenPopup: (id, rect) => openPopup(id, rect),
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
     onHidePluginPopup: () => libraryPlugin.value?.hide(),
@@ -288,21 +284,12 @@ const recreateEditor = (templateData: any) => {
 }
 
 onMounted(() => {
-  const initialBlocks = [
-    {
-      pos: 11,
-      block: {
-        id: 'init-block-1',
-        placeholder: '请输入...',
-        presetText: '智能助手'
-      }
-    }
-  ];
-
+  const demoData1 = '# 角色\n\n你是一个 {#EditorBlock id="init-block-1" placeholder="请输入..."#}智能助手{#/EditorBlock#}。变量{{user_name}}。'
+  const demoData2 = `# 角色\n\n你是一个 {#EditorBlock id="b1" placeholder="请输入..."#}智能助手{#/EditorBlock#}。\n这里插入插件：{#PluginBlock id="p1" type="plugin"#}MCP服务01{#/PluginBlock#}\n这里插入工作流：{#PluginBlock id="w1" type="workflow"#}Bing搜索{#/PluginBlock#}\n变量：{{user_name}}`
+  const demoData = demoData2
   const options: CustomEditorOptions = {
     parent: editorHostRef.value!,
-    initialDoc: '# 角色\n\n你是一个  。变量{{user_name}}。',
-    initialBlocks,
+    initialDoc: demoData,
     onOpenPopup: (id, rect) => openPopup(id, rect),
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
     onHidePluginPopup: () => libraryPlugin.value?.hide(),
