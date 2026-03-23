@@ -28,6 +28,7 @@ export interface CustomEditorOptions {
   onTriggerPluginPopup: (pos: number) => void;
   onHidePluginPopup?: () => void;
   onTriggerAIDialog: (pos: number) => void;
+  onHideAIDialog?: () => void;
   onChange?: (data: EditorData) => void;
   onBlockDeleted?: (id: string) => void;
   onBlockUpdated?: (id: string, text: string) => void;
@@ -97,7 +98,10 @@ export class CustomEditor {
             onTriggerPluginPopup: (pos) => this.options.onTriggerPluginPopup(pos),
             onHidePluginPopup: () => this.options.onHidePluginPopup?.(),
           }),
-          ...aiDialogExtensions({ onTriggerAIDialog: (pos) => this.options.onTriggerAIDialog(pos) })
+          ...aiDialogExtensions({
+            onTriggerAIDialog: (pos) => this.options.onTriggerAIDialog(pos),
+            onHideAIDialog: () => this.options.onHideAIDialog?.()
+          })
         ])
       }).state,
       parent: options.parent,

@@ -270,6 +270,13 @@ const recreateEditor = (templateData: any) => {
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
     onHidePluginPopup: () => libraryPlugin.value?.hide(),
     onTriggerAIDialog: (pos) => openAIDialog(pos),
+    onHideAIDialog: () => {
+      if (!showAIDialog.value) return;
+      const range = aiApplyRange.value;
+      if (!range || range.to - range.from !== 1) return;
+      aiPlugin.value?.hide();
+      aiApplyRange.value = null;
+    },
     onBlockUpdated: (id, text) => {
       if (showPopup.value && editingBlock.value.id === id) {
         editingBlock.value.presetText = text;
@@ -300,6 +307,13 @@ onMounted(() => {
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
     onHidePluginPopup: () => libraryPlugin.value?.hide(),
     onTriggerAIDialog: (pos) => openAIDialog(pos),
+    onHideAIDialog: () => {
+      if (!showAIDialog.value) return;
+      const range = aiApplyRange.value;
+      if (!range || range.to - range.from !== 1) return;
+      aiPlugin.value?.hide();
+      aiApplyRange.value = null;
+    },
     onBlockUpdated: (id, text) => {
       if (showPopup.value && editingBlock.value.id === id) {
         editingBlock.value.presetText = text;

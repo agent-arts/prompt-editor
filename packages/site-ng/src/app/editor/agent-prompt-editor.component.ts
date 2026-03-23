@@ -87,6 +87,13 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onHidePluginPopup: () => this.closePopup(),
       onTriggerAIDialog: (pos: number) => this.openAIDialog(pos),
+      onHideAIDialog: () => {
+        if (!this.showAIDialog) return;
+        if (!this.aiApplyRange || this.aiApplyRange.to - this.aiApplyRange.from !== 1) return;
+        this.aiPlugin.hide();
+        this.aiApplyRange = null;
+        this.cdr.detectChanges();
+      },
       onChange: (data) => this.emitModel(data),
       onBlockUpdated: (id: string, text: string) => {
         if (this.showPopup && this.editingBlock.id === id) {
@@ -273,6 +280,13 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onHidePluginPopup: () => this.closePopup(),
       onTriggerAIDialog: (pos: number) => this.openAIDialog(pos),
+      onHideAIDialog: () => {
+        if (!this.showAIDialog) return;
+        if (!this.aiApplyRange || this.aiApplyRange.to - this.aiApplyRange.from !== 1) return;
+        this.aiPlugin.hide();
+        this.aiApplyRange = null;
+        this.cdr.detectChanges();
+      },
       onChange: (data) => this.emitModel(data),
       onBlockUpdated: (id: string, text: string) => {
         if (this.showPopup && this.editingBlock.id === id) {
