@@ -13,7 +13,6 @@ import { aiDialogExtensions } from './plugins/ai-dialog';
 import {
   addPluginBlockEffect,
   getPluginBlocks,
-  parseTemplateVariables,
   pluginBlockExtensions,
   pluginBlockField,
   pluginPopupTriggerExtensions,
@@ -45,19 +44,7 @@ export class CustomEditor {
     const { doc: initialDoc, initialBlocks: initialBlocksFromDoc } = parseEditorContentString(options.initialDoc);
     const allInitialBlocks: InitialBlock[] = [...(options.initialBlocks || []), ...initialBlocksFromDoc];
 
-    // 解析文档中的历史变量块 {{xxx}}
-    const parsedBlocks = parseTemplateVariables(initialDoc);
-    const existingVariableRanges = new Set(
-      allInitialBlocks
-        .filter((b) => 'type' in (b.block as any) && (b.block as any).type === 'variable')
-        .map((b) => `${b.pos}:${b.len || 1}`)
-    );
-    const combinedInitialBlocks = [
-      ...allInitialBlocks,
-      ...parsedBlocks.filter((b) => !existingVariableRanges.has(`${b.pos}:${b.len || 1}`))
-    ];
-
-    combinedInitialBlocks.forEach(item => {
+    allInitialBlocks.forEach(item => {
       if (!('type' in item.block)) {
         this.allBlocks.set((item.block as EditorBlock).id, item.block as EditorBlock);
       }
@@ -85,7 +72,7 @@ export class CustomEditor {
       }
     };
 
-    const state = createEditorState(initialDoc, callbacks, combinedInitialBlocks);
+    const state = createEditorState(initialDoc, callbacks, allInitialBlocks);
 
     this.view = new EditorView({
       state: state.update({
@@ -145,7 +132,6 @@ export class CustomEditor {
     };
     this.view.dispatch({
       changes: { from: pos, to: pos + 1, insert: token },
-      effects: addPluginBlockEffect.of({ pos, len: token.length, block }),
       selection: { anchor: pos + token.length }
     });
     this.view.focus();
@@ -270,7 +256,9 @@ const markdownStyleField = StateField.define<DecorationSet>({
  */
 function createEditorState(initialDoc: string, callbacks: CodeMirrorCallbacks, initialBlocks: { pos: number, len?: number, block: EditorBlock | PluginBlock }[] = []) {
   const editorBlocks = initialBlocks.filter((b) => !('type' in (b.block as any) && 'name' in (b.block as any))) as { pos: number, len?: number, block: EditorBlock }[];
-  const pluginBlocks = initialBlocks.filter((b) => ('type' in (b.block as any) && 'name' in (b.block as any))) as { pos: number, len?: number, block: PluginBlock }[];
+  const pluginBlocks = initialBlocks
+    .filter((b) => ('type' in (b.block as any) && 'name' in (b.block as any)))
+    .filter((b) => (b.block as PluginBlock).type !== 'variable') as { pos: number, len?: number, block: PluginBlock }[];
 
   const extensions = [
     history(),

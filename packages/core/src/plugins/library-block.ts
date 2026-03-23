@@ -42,6 +42,29 @@ const initialPluginBlocksFacet = Facet.define<{ pos: number, len?: number, block
   combine: values => values.length ? values[0] : []
 });
 
+const variableBlockMark = Decoration.mark({ class: 'cm-plugin-block cm-plugin-block-variable' });
+
+function getVariableDecorations(doc: string) {
+  const decorations: { from: number, to: number }[] = [];
+  const regex = /\{\{(.+?)\}\}/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(doc)) !== null) {
+    decorations.push({ from: match.index, to: match.index + match[0].length });
+  }
+  return Decoration.set(decorations.map(r => variableBlockMark.range(r.from, r.to)), true);
+}
+
+const variableBlockField = StateField.define<DecorationSet>({
+  create(state) {
+    return getVariableDecorations(state.doc.toString());
+  },
+  update(decorations, tr) {
+    if (tr.docChanged) return getVariableDecorations(tr.state.doc.toString());
+    return decorations.map(tr.changes);
+  },
+  provide: f => EditorView.decorations.from(f)
+});
+
 export const pluginBlockField = StateField.define<DecorationSet>({
   create(state) {
     const initialBlocks = state.facet(initialPluginBlocksFacet);
@@ -51,9 +74,10 @@ export const pluginBlockField = StateField.define<DecorationSet>({
       .slice()
       .sort((a, b) => a.pos - b.pos)
       .map(({ pos, len, block }) => {
+        if (block.type === 'variable') return null;
         return Decoration.replace({ widget: new PluginWidget(block) }).range(pos, pos + (len || 1));
       });
-    return Decoration.set(deco, true);
+    return Decoration.set(deco.filter(Boolean) as any, true);
   },
   update(decorations, tr) {
     decorations = decorations.map(tr.changes);
@@ -61,6 +85,7 @@ export const pluginBlockField = StateField.define<DecorationSet>({
     for (const e of tr.effects) {
       if (e.is(addPluginBlockEffect)) {
         const { pos: originalPos, len, block } = e.value;
+        if (block.type === 'variable') continue;
         const pos = tr.changes.mapPos(originalPos);
         const pluginDecoration = Decoration.replace({
           widget: new PluginWidget(block),
@@ -79,6 +104,7 @@ export function pluginBlockExtensions(options: {
   return [
     initialPluginBlocksFacet.of(options.initialBlocks || []),
     pluginBlockField,
+    variableBlockField,
   ];
 }
 
