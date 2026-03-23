@@ -41,6 +41,11 @@ const loadTemplate = (template: any) => {
   // 销毁并重新创建 editor 实例来加载模板
   editorRef.value.recreateEditor(template.data);
 }
+
+const printData = () => {
+  const data = editorRef.value.editor.getData();
+  console.log('data', data);
+}
 </script>
 
 <template>
@@ -59,6 +64,8 @@ const loadTemplate = (template: any) => {
         <i class="ci-save font-size-5" title="保存为模板" @click="saveTemplate"></i>
         |
         <i class="ci-task font-size-5" title="插入编辑块" @click="addBlock"></i>
+        |
+        <i class="ci-print font-size-5" title="打印编辑器数据" @click="printData"></i>
       </div>
     </div>
     <Editor ref="editorRef" />
