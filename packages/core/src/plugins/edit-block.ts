@@ -113,6 +113,15 @@ export const editBlockField = StateField.define<DecorationSet>({
   },
   update(decorations, tr) {
     const callbacks = tr.state.facet(callbacksFacet);
+    if (tr.docChanged) {
+      const changedRanges: { from: number; to: number }[] = [];
+      tr.changes.iterChanges((fromA, toA) => {
+        changedRanges.push({ from: fromA, to: toA });
+      });
+      decorations = decorations.update({
+        filter: (from, to) => !changedRanges.some((r) => from < r.to && to > r.from)
+      });
+    }
     decorations = decorations.map(tr.changes);
 
     for (const e of tr.effects) {
