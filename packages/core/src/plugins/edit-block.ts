@@ -10,6 +10,7 @@ export interface CodeMirrorCallbacks {
 }
 
 export const addBlockEffect = StateEffect.define<EditorBlock>();
+export const addBlockAtEffect = StateEffect.define<{ pos: number; len?: number; block: EditorBlock }>();
 export const updateBlockEffect = StateEffect.define<EditorBlock>();
 
 class EditBlockWidget extends WidgetType {
@@ -120,6 +121,13 @@ export const editBlockField = StateField.define<DecorationSet>({
         const blockDecoration = Decoration.replace({
           widget: new EditBlockWidget(e.value, callbacks),
         }).range(pos, pos + 1);
+        decorations = decorations.update({ add: [blockDecoration] });
+      } else if (e.is(addBlockAtEffect)) {
+        const { pos: originalPos, len, block } = e.value;
+        const pos = tr.changes.mapPos(originalPos);
+        const blockDecoration = Decoration.replace({
+          widget: new EditBlockWidget(block, callbacks),
+        }).range(pos, pos + (len || 1));
         decorations = decorations.update({ add: [blockDecoration] });
       } else if (e.is(updateBlockEffect)) {
         const newBlock = e.value;

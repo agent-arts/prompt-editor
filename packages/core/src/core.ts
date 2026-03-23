@@ -3,6 +3,7 @@ import { EditorView, keymap, Decoration, DecorationSet, drawSelection } from '@c
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import {
   addBlockEffect,
+  addBlockAtEffect,
   editBlockExtensions,
   editBlockField,
   getEditorBlocks,
@@ -80,6 +81,59 @@ export class CustomEditor {
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               this.options.onChange?.(this.getData());
+            }
+          }),
+          EditorView.domEventHandlers({
+            copy: (event, view) => {
+              const sel = view.state.selection.main;
+              if (sel.empty) return false;
+              const text = serializeEditorContentSlice(view, this.allBlocks, sel.from, sel.to);
+              event.preventDefault();
+              event.clipboardData?.setData('text/plain', text);
+              return true;
+            },
+            cut: (event, view) => {
+              const sel = view.state.selection.main;
+              if (sel.empty) return false;
+              const text = serializeEditorContentSlice(view, this.allBlocks, sel.from, sel.to);
+              event.preventDefault();
+              event.clipboardData?.setData('text/plain', text);
+              view.dispatch({
+                changes: { from: sel.from, to: sel.to, insert: '' },
+                selection: { anchor: sel.from }
+              });
+              return true;
+            },
+            paste: (event, view) => {
+              const text = event.clipboardData?.getData('text/plain') ?? '';
+              if (!text.includes('{#EditorBlock') && !text.includes('{#PluginBlock')) return false;
+
+              const parsed = parseEditorContentString(text);
+              if (!parsed.initialBlocks.length) return false;
+
+              const sel = view.state.selection.main;
+              const insertFrom = sel.from;
+              const insertDoc = parsed.doc;
+              event.preventDefault();
+              view.dispatch({
+                changes: { from: sel.from, to: sel.to, insert: insertDoc },
+                selection: { anchor: insertFrom + insertDoc.length }
+              });
+
+              const effects: StateEffect<unknown>[] = [];
+              for (const b of parsed.initialBlocks) {
+                const pos = insertFrom + b.pos;
+                if (!('type' in (b.block as any))) {
+                  const block = b.block as EditorBlock;
+                  this.allBlocks.set(block.id, block);
+                  effects.push(addBlockAtEffect.of({ pos, len: 1, block }));
+                } else {
+                  effects.push(addPluginBlockEffect.of({ pos, len: 1, block: b.block as PluginBlock }));
+                }
+              }
+
+              view.dispatch({ effects });
+              return true;
             }
           }),
           ...pluginPopupTriggerExtensions({
@@ -412,5 +466,49 @@ function serializeEditorContentString(view: EditorView, allBlocks: Map<string, E
     cursor = r.to;
   }
   result += doc.slice(cursor);
+  return result;
+}
+
+function serializeEditorContentSlice(view: EditorView, allBlocks: Map<string, EditorBlock>, from: number, to: number) {
+  const doc = view.state.doc.toString();
+  const slice = doc.slice(from, to);
+
+  const editorBlocks = getEditorBlocks(view)
+    .map((b) => {
+      const latest = allBlocks.get(b.block.id);
+      return latest ? { ...b, block: latest } : b;
+    })
+    .filter((b) => b.pos >= from && b.pos < to);
+
+  const pluginBlocks = getPluginBlocks(view)
+    .filter((b) => b.pos >= from && b.pos < to);
+
+  const replacements: { from: number; to: number; text: string }[] = [];
+
+  for (const { pos, len, block } of editorBlocks) {
+    const relFrom = pos - from;
+    const relTo = relFrom + (len || 1);
+    const text = `{#EditorBlock id="${escapeAttrValue(block.id)}" placeholder="${escapeAttrValue(block.placeholder)}"#}${block.presetText}{#/EditorBlock#}`;
+    replacements.push({ from: relFrom, to: relTo, text });
+  }
+
+  for (const { pos, len, block } of pluginBlocks) {
+    const relFrom = pos - from;
+    const relTo = relFrom + (len || 1);
+    const text = `{#PluginBlock id="${escapeAttrValue(block.id)}" type="${escapeAttrValue(block.type)}"#}${block.name}{#/PluginBlock#}`;
+    replacements.push({ from: relFrom, to: relTo, text });
+  }
+
+  replacements.sort((a, b) => a.from - b.from || b.to - b.from - (a.to - a.from));
+
+  let result = '';
+  let cursor = 0;
+  for (const r of replacements) {
+    if (r.from < cursor) continue;
+    result += slice.slice(cursor, r.from);
+    result += r.text;
+    cursor = r.to;
+  }
+  result += slice.slice(cursor);
   return result;
 }
