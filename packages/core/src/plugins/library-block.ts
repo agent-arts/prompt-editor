@@ -86,44 +86,6 @@ class VariableWidget extends WidgetType {
     });
 
     input.addEventListener('keydown', (e) => {
-      const key = (e as KeyboardEvent).key;
-      if (key === 'Backspace' || key === 'Delete') {
-        const selStart = input.selectionStart ?? 0;
-        const selEnd = input.selectionEnd ?? 0;
-        const valLen = input.value.length;
-        const from = view.posAtDOM(span);
-        const to = from + this.tokenLength;
-
-        // 光标在变量块“内部”时的边界删除：只删一个括号字符
-        if (selStart === selEnd) {
-          if (key === 'Backspace' && selStart === valLen) {
-            e.preventDefault();
-            e.stopPropagation();
-            const newText = input.value.slice(0, valLen - 1);
-            input.value = newText;
-            input.style.width = `${measureWidth(newText)}px`;
-            view.dispatch({
-              changes: { from, to, insert: newText },
-              selection: { anchor: from + newText.length }
-            });
-            view.focus();
-            return;
-          }
-          if (key === 'Delete' && selStart === 0) {
-            e.preventDefault();
-            e.stopPropagation();
-            const newText = input.value.slice(1);
-            input.value = newText;
-            input.style.width = `${measureWidth(newText)}px`;
-            view.dispatch({
-              changes: { from, to, insert: newText },
-              selection: { anchor: from }
-            });
-            view.focus();
-            return;
-          }
-        }
-      }
       e.stopPropagation();
     });
 
@@ -243,14 +205,24 @@ export const pluginBlockField = StateField.define<DecorationSet>({
 export function pluginBlockExtensions(options: {
   initialBlocks?: { pos: number, len?: number, block: PluginBlock }[];
 }): Extension[] {
-  const findVariableAtCursor = (docText: string, pos: number): { from: number, to: number } | null => {
-    const start = docText.lastIndexOf('{{', pos);
-    if (start === -1) return null;
-    const close = docText.indexOf('}}', start + 2);
-    if (close === -1) return null;
-    const end = close + 2;
-    if (pos < start || pos > end) return null;
-    return { from: start, to: end };
+  const findVariableEndingAt = (view: EditorView, pos: number): { from: number, to: number } | null => {
+    const field = view.state.field(variableTokenField, false);
+    if (!field) return null;
+    let found: { from: number, to: number } | null = null;
+    field.between(Math.max(0, pos - 1), pos, (from, to) => {
+      if (to === pos) found = { from, to };
+    });
+    return found;
+  };
+
+  const findVariableStartingAt = (view: EditorView, pos: number): { from: number, to: number } | null => {
+    const field = view.state.field(variableTokenField, false);
+    if (!field) return null;
+    let found: { from: number, to: number } | null = null;
+    field.between(pos, Math.min(view.state.doc.length, pos + 1), (from, to) => {
+      if (from === pos) found = { from, to };
+    });
+    return found;
   };
 
   return [
@@ -265,17 +237,17 @@ export function pluginBlockExtensions(options: {
         if (!sel.empty) return false;
 
         const pos = sel.from;
-        const docText = view.state.doc.toString();
-        const range = findVariableAtCursor(docText, pos);
-        if (!range) return false;
-
-        if (event.key === 'Backspace' && pos === range.to) {
+        if (event.key === 'Backspace') {
+          const range = findVariableEndingAt(view, pos);
+          if (!range) return false;
           event.preventDefault();
           view.dispatch({ changes: { from: range.from, to: range.to, insert: '' }, selection: { anchor: range.from } });
           return true;
         }
 
-        if (event.key === 'Delete' && pos === range.from) {
+        if (event.key === 'Delete') {
+          const range = findVariableStartingAt(view, pos);
+          if (!range) return false;
           event.preventDefault();
           view.dispatch({ changes: { from: range.from, to: range.to, insert: '' }, selection: { anchor: range.from } });
           return true;
@@ -288,17 +260,17 @@ export function pluginBlockExtensions(options: {
         const sel = view.state.selection.main;
         if (!sel.empty) return false;
         const pos = sel.from;
-        const docText = view.state.doc.toString();
-        const range = findVariableAtCursor(docText, pos);
-        if (!range) return false;
-
-        if (inputType === 'deleteContentBackward' && pos === range.to) {
+        if (inputType === 'deleteContentBackward') {
+          const range = findVariableEndingAt(view, pos);
+          if (!range) return false;
           event.preventDefault();
           view.dispatch({ changes: { from: range.from, to: range.to, insert: '' }, selection: { anchor: range.from } });
           return true;
         }
 
-        if (inputType === 'deleteContentForward' && pos === range.from) {
+        if (inputType === 'deleteContentForward') {
+          const range = findVariableStartingAt(view, pos);
+          if (!range) return false;
           event.preventDefault();
           view.dispatch({ changes: { from: range.from, to: range.to, insert: '' }, selection: { anchor: range.from } });
           return true;
