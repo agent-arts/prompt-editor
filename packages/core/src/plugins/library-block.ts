@@ -136,14 +136,14 @@ class VariableWidget extends WidgetType {
 }
 
 function getVariableTokenDecorations(doc: string) {
-  const decorations: Decoration[] = [];
+  const ranges = [];
   let match: RegExpExecArray | null;
   while ((match = variableTokenRegex.exec(doc)) !== null) {
     const start = match.index;
     const token = match[0];
-    decorations.push(Decoration.replace({ widget: new VariableWidget(match[1], token.length) }).range(start, start + token.length));
+    ranges.push(Decoration.replace({ widget: new VariableWidget(match[1], token.length) }).range(start, start + token.length));
   }
-  return Decoration.set(decorations, true);
+  return Decoration.set(ranges, true);
 }
 
 const variableTokenField = StateField.define<DecorationSet>({
