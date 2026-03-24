@@ -33,13 +33,13 @@ jobs:
       - name: Build lib
         run: pnpm build:lib
       - name: Build site
-        run: pnpm build
+        run: pnpm docs:build
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
-          source: ./packages/site/dist
+          source: ./docs/.vitepress/dist
           destination: ./_site
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

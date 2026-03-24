@@ -7,10 +7,14 @@
     "build": "pnpm -F site build",
     "build:ng": "pnpm -F site-ng build",
     "build:lib": "pnpm -F @agent-arts/editor build",
-    "build:watch": "pnpm -F @agent-arts/editor build:watch"
+    "build:watch": "pnpm -F @agent-arts/editor build:watch",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "less": "^4.6.4"
+    "less": "^4.6.4",
+    "vitepress": "2.0.0-alpha.17"
   }
 }
