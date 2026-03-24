@@ -163,7 +163,10 @@ export const editBlockField = StateField.define<DecorationSet>({
     }
     return decorations;
   },
-  provide: f => EditorView.decorations.from(f)
+  provide: f => [
+    EditorView.decorations.from(f),
+    EditorView.atomicRanges.of((view) => view.state.field(f))
+  ]
 });
 
 const editBlockColor = 'rgba(20, 118, 255, 1)';

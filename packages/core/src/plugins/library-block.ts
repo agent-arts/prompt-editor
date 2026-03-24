@@ -199,7 +199,10 @@ export const pluginBlockField = StateField.define<DecorationSet>({
     }
     return decorations;
   },
-  provide: f => EditorView.decorations.from(f)
+  provide: f => [
+    EditorView.decorations.from(f),
+    EditorView.atomicRanges.of((view) => view.state.field(f))
+  ]
 });
 
 export function pluginBlockExtensions(options: {

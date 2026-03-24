@@ -20,6 +20,8 @@ import {
 } from './plugins/library-block';
 import type { EditorBlock, EditorData, InitialBlock, PluginBlock } from './types';
 
+const BLOCK_PLACEHOLDER = '\uFFFC';
+
 export interface CustomEditorOptions {
   parent: HTMLElement;
   initialDoc: string;
@@ -159,7 +161,7 @@ export class CustomEditor {
     this.allBlocks.set(newBlock.id, newBlock);
     const { from, to } = this.view.state.selection.main;
     this.view.dispatch({
-      changes: { from, to, insert: ' ' },
+      changes: { from, to, insert: BLOCK_PLACEHOLDER },
       effects: addBlockEffect.of(newBlock),
       selection: { anchor: from + 1 }
     });
@@ -169,7 +171,7 @@ export class CustomEditor {
 
   public addPluginBlock(pos: number, block: PluginBlock) {
     this.view.dispatch({
-      changes: { from: pos, to: pos + 1, insert: ' ' },
+      changes: { from: pos, to: pos + 1, insert: BLOCK_PLACEHOLDER },
       effects: addPluginBlockEffect.of({ pos, block }),
       selection: { anchor: pos + 1 }
     });
@@ -397,7 +399,7 @@ function parseEditorContentString(input: string): { doc: string; initialBlocks: 
 
       const innerText = input.slice(innerStart, closeIndex);
       const pos = doc.length;
-      doc += ' ';
+      doc += BLOCK_PLACEHOLDER;
 
       if (tagName === 'EditorBlock') {
         const text = innerText;
