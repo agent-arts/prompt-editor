@@ -4,7 +4,7 @@ on:
   push:
     branches: [dev, main] # 设置源码主分支
     paths:
-      - 'packages/**'
+      - 'docs/**'
   workflow_dispatch: {} # 支持手动触发
 
 permissions:
