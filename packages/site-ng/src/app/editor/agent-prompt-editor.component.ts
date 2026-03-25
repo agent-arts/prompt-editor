@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, OnDestroy, ViewEncapsulation, HostListener, forwardRef, ChangeDetectorRef, ContentChild, TemplateRef } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, OnDestroy, ViewEncapsulation, HostListener, forwardRef, ChangeDetectorRef, ContentChild, TemplateRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CustomEditor } from '@agent-arts/editor';
@@ -26,6 +26,8 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
   @ContentChild('aiDialog', { read: TemplateRef }) aiDialogTpl?: TemplateRef<any>;
 
   @ViewChild('editorHost', { static: true }) editorHost!: ElementRef;
+  @Input() readonly = false;
+  @Input() placeholder: string | undefined;
   private editor!: CustomEditor;
   private modelValue = '';
   private pendingModelValue: string | null = null;
@@ -82,6 +84,8 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
     const options: CustomEditorOptions = {
       parent: this.editorHost.nativeElement,
       initialDoc: initialContent ?? '',
+      readonly: this.readonly,
+      placeholder: this.placeholder,
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onHidePluginPopup: () => this.closePopup(),
@@ -272,6 +276,8 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
     const options: CustomEditorOptions = {
       parent: this.editorHost.nativeElement,
       initialDoc: content,
+      readonly: this.readonly,
+      placeholder: this.placeholder,
       onOpenPopup: (id: string, rect: DOMRect) => this.openPopup(id, rect),
       onTriggerPluginPopup: (pos: number) => this.openPluginPopup(pos),
       onHidePluginPopup: () => this.closePopup(),

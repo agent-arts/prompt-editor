@@ -1,5 +1,5 @@
 import { EditorState, StateField, StateEffect, Text } from '@codemirror/state';
-import { EditorView, keymap, Decoration, DecorationSet, drawSelection } from '@codemirror/view';
+ import { EditorView, keymap, Decoration, DecorationSet, drawSelection, placeholder as cmPlaceholder } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import {
   addBlockEffect,
@@ -26,6 +26,8 @@ export interface CustomEditorOptions {
   parent: HTMLElement;
   initialDoc: string;
   initialBlocks?: InitialBlock[];
+  readonly?: boolean;
+  placeholder?: string;
   onOpenPopup: (id: string, rect: DOMRect) => void;
   onTriggerPluginPopup: (pos: number) => void;
   onHidePluginPopup?: () => void;
@@ -145,7 +147,9 @@ export class CustomEditor {
           ...aiDialogExtensions({
             onTriggerAIDialog: (pos) => this.options.onTriggerAIDialog(pos),
             onHideAIDialog: () => this.options.onHideAIDialog?.()
-          })
+          }),
+          ...(options.readonly ? [EditorView.editable.of(false)] : []),
+          ...(options.placeholder ? [cmPlaceholder(options.placeholder)] : [])
         ])
       }).state,
       parent: options.parent,

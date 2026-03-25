@@ -3,6 +3,11 @@ import { onMounted, ref, onUnmounted } from 'vue'
 import { CustomEditor } from '@agent-arts/editor'
 import type { CustomEditorOptions, EditorBlock, PluginBlock } from '@agent-arts/editor'
 
+const props = defineProps<{
+  readonly?: boolean
+  placeholder?: string
+}>()
+
 class LocalLibraryBlockController {
   public userVariables = [
     'sys_uuid',
@@ -262,6 +267,8 @@ const recreateEditor = (content: string) => {
   const options: CustomEditorOptions = {
     parent: editorHostRef.value!,
     initialDoc: content,
+    readonly: props.readonly,
+    placeholder: props.placeholder,
     onOpenPopup: (id, rect) => openPopup(id, rect),
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
     onHidePluginPopup: () => libraryPlugin.value?.hide(),
@@ -290,6 +297,8 @@ onMounted(() => {
   const options: CustomEditorOptions = {
     parent: editorHostRef.value!,
     initialDoc: demoData,
+    readonly: props.readonly,
+    placeholder: props.placeholder,
     onOpenPopup: (id, rect) => openPopup(id, rect),
     onTriggerPluginPopup: (pos) => openPluginPopup(pos),
     onHidePluginPopup: () => libraryPlugin.value?.hide(),

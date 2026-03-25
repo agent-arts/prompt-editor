@@ -132,6 +132,10 @@ const printData = () => {
       </div>
     </div>
     <Editor ref="editorRef" />
+    <h2>只读模式</h2>
+    <Editor ref="editorRef" readonly />
+    <h2>placeholder 空白占位</h2>
+    <Editor ref="editorRef" placeholder="请输入内容" />
   </div>
 </template>
 
