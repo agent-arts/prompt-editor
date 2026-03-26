@@ -5,7 +5,7 @@ import { sidebar } from './sidebar.mts'
 export default defineConfig({
   title: "Prompt Editor",
   description: "基于 CodeMirror 6 的提示词编辑器，纯 TypeScript 实现，框架无关。",
-  base: '/editor/',
+  base: '/prompt-editor/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
