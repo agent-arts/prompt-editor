@@ -189,17 +189,12 @@ export class CustomEditor {
     let from = Math.max(0, Math.min(pos, docLen));
     let to = from;
 
-    const atTwo = this.view.state.doc.sliceString(from, Math.min(from + 2, docLen));
-    if (atTwo === '{{') {
-      to = from + 2;
-    } else if (from < docLen && this.view.state.doc.sliceString(from, from + 1) === '{') {
+    const charAt = this.view.state.doc.sliceString(from, Math.min(from + 1, docLen));
+    if (charAt === '{') {
       to = from + 1;
     } else if (from > 0) {
-      const leftTwo = this.view.state.doc.sliceString(Math.max(0, from - 2), from);
-      if (leftTwo === '{{') {
-        from = from - 2;
-        to = from + 2;
-      } else if (this.view.state.doc.sliceString(from - 1, from) === '{') {
+      const leftChar = this.view.state.doc.sliceString(from - 1, from);
+      if (leftChar === '{') {
         from = from - 1;
         to = from + 1;
       }

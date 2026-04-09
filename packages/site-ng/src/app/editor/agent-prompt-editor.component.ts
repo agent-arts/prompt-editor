@@ -267,33 +267,8 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
     const docLen = view.state.doc.length;
     const basePos = this.lastCursorPos === null ? docLen : this.lastCursorPos;
     const pos = Math.max(0, Math.min(basePos, docLen));
-    const token = `{{${name}}}`;
-
-    let from = pos;
-    let to = pos;
-
-    const atTwo = view.state.doc.sliceString(from, Math.min(from + 2, docLen));
-    if (atTwo === '{{') {
-      to = from + 2;
-    } else if (from < docLen && view.state.doc.sliceString(from, from + 1) === '{') {
-      to = from + 1;
-    } else if (from > 0) {
-      const leftTwo = view.state.doc.sliceString(Math.max(0, from - 2), from);
-      if (leftTwo === '{{') {
-        from = from - 2;
-        to = from + 2;
-      } else if (view.state.doc.sliceString(from - 1, from) === '{') {
-        from = from - 1;
-        to = from + 1;
-      }
-    }
-
-    view.dispatch({
-      changes: { from, to, insert: token },
-      selection: { anchor: from + token.length }
-    });
-    view.focus();
-    this.lastCursorPos = view.state.selection.main.from;
+    this.editor.addVariableBlock(pos, name);
+    this.lastCursorPos = this.editor.view.state.selection.main.from;
   }
 
   addBlock() {
