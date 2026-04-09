@@ -190,14 +190,15 @@ export class CustomEditor {
     let to = from;
 
     const charAt = this.view.state.doc.sliceString(from, Math.min(from + 1, docLen));
-    if (charAt === '{') {
+    const nextChar = this.view.state.doc.sliceString(Math.min(from + 1, docLen - 1), Math.min(from + 2, docLen));
+    const leftChar = from > 0 ? this.view.state.doc.sliceString(from - 1, from) : '';
+    const leftLeftChar = from > 1 ? this.view.state.doc.sliceString(from - 2, from - 1) : '';
+
+    if (charAt === '{' && nextChar !== '{') {
       to = from + 1;
-    } else if (from > 0) {
-      const leftChar = this.view.state.doc.sliceString(from - 1, from);
-      if (leftChar === '{') {
-        from = from - 1;
-        to = from + 1;
-      }
+    } else if (leftChar === '{' && leftLeftChar !== '{') {
+      from = from - 1;
+      to = from + 1;
     }
 
     const block: PluginBlock = {
