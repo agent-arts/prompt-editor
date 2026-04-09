@@ -428,15 +428,15 @@ function parseEditorContentString(input: string): { doc: string; initialBlocks: 
       if (tagName === 'EditorBlock') {
         const text = innerText;
         const block: EditorBlock = {
-          id: attrs.id || `block-${pos}`,
-          placeholder: attrs.placeholder || '',
-          presetText: text || (typeof attrs.presetText === 'string' ? attrs.presetText : '')
+          id: attrs['id'] || `block-${pos}`,
+          placeholder: attrs['placeholder'] || '',
+          presetText: text || (typeof attrs['presetText'] === 'string' ? attrs['presetText'] : '')
         };
         initialBlocks.push({ pos, len: 1, block });
       } else if (tagName === 'PluginBlock') {
-        const blockType = attrs.type === 'workflow' ? 'workflow' : 'plugin';
+        const blockType = attrs['type'] === 'workflow' ? 'workflow' : 'plugin';
         const block: PluginBlock = {
-          id: attrs.id || `plugin-${pos}`,
+          id: attrs['id'] || `plugin-${pos}`,
           type: blockType,
           name: innerText
         };
