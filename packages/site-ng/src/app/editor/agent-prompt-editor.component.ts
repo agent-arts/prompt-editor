@@ -57,6 +57,8 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
   aiFinished = false;
   aiApplyRange: { from: number, to: number } | null = null;
   private aiPlugin!: LocalAIDialogController;
+  private lastCursorPos: number | null = null;
+  private detachCursorTracker: (() => void) | null = null;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -107,6 +109,7 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
 
     this.editor = new CustomEditor(options);
     this.editor.view.dom.addEventListener('blur', this.blurListener, true);
+    this.attachCursorTracker();
     if (this.pendingModelValue !== null) {
       this.applyModelString(this.pendingModelValue);
       this.pendingModelValue = null;
@@ -259,6 +262,40 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
     this.closePopup();
   }
 
+  insertVariable(name: string) {
+    const view = this.editor.view;
+    const docLen = view.state.doc.length;
+    const basePos = this.lastCursorPos === null ? docLen : this.lastCursorPos;
+    const pos = Math.max(0, Math.min(basePos, docLen));
+    const token = `{{${name}}}`;
+
+    let from = pos;
+    let to = pos;
+
+    const atTwo = view.state.doc.sliceString(from, Math.min(from + 2, docLen));
+    if (atTwo === '{{') {
+      to = from + 2;
+    } else if (from < docLen && view.state.doc.sliceString(from, from + 1) === '{') {
+      to = from + 1;
+    } else if (from > 0) {
+      const leftTwo = view.state.doc.sliceString(Math.max(0, from - 2), from);
+      if (leftTwo === '{{') {
+        from = from - 2;
+        to = from + 2;
+      } else if (view.state.doc.sliceString(from - 1, from) === '{') {
+        from = from - 1;
+        to = from + 1;
+      }
+    }
+
+    view.dispatch({
+      changes: { from, to, insert: token },
+      selection: { anchor: from + token.length }
+    });
+    view.focus();
+    this.lastCursorPos = view.state.selection.main.from;
+  }
+
   addBlock() {
     this.editor.addBlock();
   }
@@ -270,6 +307,7 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
   recreateEditor(content: string) {
     if (this.editor) {
       this.editor.view.dom.removeEventListener('blur', this.blurListener, true);
+      this.detachCursorTracker?.();
       this.editor.destroy();
     }
 
@@ -299,6 +337,31 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
 
     this.editor = new CustomEditor(options);
     this.editor.view.dom.addEventListener('blur', this.blurListener, true);
+    this.attachCursorTracker();
+  }
+
+  private attachCursorTracker() {
+    this.detachCursorTracker?.();
+    const view = this.editor?.view;
+    if (!view) return;
+
+    const update = () => {
+      this.lastCursorPos = view.state.selection.main.from;
+    };
+
+    const onMouseUp = () => update();
+    const onKeyUp = () => update();
+    const onFocusIn = () => update();
+
+    view.dom.addEventListener('mouseup', onMouseUp);
+    view.dom.addEventListener('keyup', onKeyUp);
+    view.dom.addEventListener('focusin', onFocusIn);
+
+    this.detachCursorTracker = () => {
+      view.dom.removeEventListener('mouseup', onMouseUp);
+      view.dom.removeEventListener('keyup', onKeyUp);
+      view.dom.removeEventListener('focusin', onFocusIn);
+    };
   }
 
   private applyModelString(value: string) {
@@ -336,6 +399,7 @@ export class AgentPromptEditorComponent implements OnInit, OnDestroy, ControlVal
   ngOnDestroy() {
     if (this.editor) {
       this.editor.view.dom.removeEventListener('blur', this.blurListener, true);
+      this.detachCursorTracker?.();
       this.editor.destroy();
     }
     if (this.aiPlugin) {

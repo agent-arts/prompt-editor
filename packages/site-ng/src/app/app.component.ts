@@ -51,6 +51,10 @@ export class AppComponent implements AfterViewInit {
     this.editorComponent?.addBlock();
   }
 
+  insertVariableBlock() {
+    this.editorComponent?.insertVariable('sys_user_email');
+  }
+
   addPluginBlock(item: PluginBlock) {
     this.editorComponent?.addPluginBlock(item);
     this.editorComponent?.closePopup();
