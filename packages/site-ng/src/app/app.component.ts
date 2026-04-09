@@ -31,20 +31,8 @@ export class AppComponent implements AfterViewInit {
       return;
     }
 
-    this.editorModel = JSON.stringify({
-      content: '# 角色\n\n你是一个  。变量{{user_name}}。--test',
-      editorBlocks: [
-        {
-          pos: 11,
-          block: {
-            id: 'init-block-1',
-            placeholder: '请输入...',
-            presetText: '智能助手'
-          }
-        }
-      ],
-      pluginBlocks: []
-    });
+    const demoData2 = `# 角色\n\n你是一个 {#EditorBlock id="b1" placeholder="请输入..."#}智能助手{#/EditorBlock#}。\n这里插入插件：{#PluginBlock id="p1" type="plugin"#}MCP服务01{#/PluginBlock#}\n这里插入工作流：{#PluginBlock id="w1" type="workflow"#}Bing搜索{#/PluginBlock#}\n变量：{{user_name}}`
+    this.editorModel = demoData2;
   }
 
   addBlock() {
