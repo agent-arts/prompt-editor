@@ -185,14 +185,34 @@ export class CustomEditor {
 
   public addVariableBlock(pos: number, name: string) {
     const token = `{{${name}}}`;
+    const docLen = this.view.state.doc.length;
+    let from = Math.max(0, Math.min(pos, docLen));
+    let to = from;
+
+    const atTwo = this.view.state.doc.sliceString(from, Math.min(from + 2, docLen));
+    if (atTwo === '{{') {
+      to = from + 2;
+    } else if (from < docLen && this.view.state.doc.sliceString(from, from + 1) === '{') {
+      to = from + 1;
+    } else if (from > 0) {
+      const leftTwo = this.view.state.doc.sliceString(Math.max(0, from - 2), from);
+      if (leftTwo === '{{') {
+        from = from - 2;
+        to = from + 2;
+      } else if (this.view.state.doc.sliceString(from - 1, from) === '{') {
+        from = from - 1;
+        to = from + 1;
+      }
+    }
+
     const block: PluginBlock = {
-      id: `var-${name}-${pos}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `var-${name}-${from}-${Math.random().toString(36).slice(2, 8)}`,
       name,
       type: 'variable'
     };
     this.view.dispatch({
-      changes: { from: pos, to: pos + 1, insert: token },
-      selection: { anchor: pos + token.length }
+      changes: { from, to, insert: token },
+      selection: { anchor: from + token.length }
     });
     this.view.focus();
     return block;
