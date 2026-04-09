@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import Editor from './components/Editor.vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted } from 'vue'
 
 const editorRef = ref()
 const templates = ref<any[]>([])
 const currentTemplateName = ref('')
+const lastCursorPos = ref<number | null>(null)
+let detachCursorTracker: (() => void) | null = null
 
 const TEMPLATE_STORAGE_KEY = 'editor-templates';
 
@@ -109,6 +111,50 @@ const printData = () => {
   const data = editorRef.value.editor.getData();
   console.log('data', data);
 }
+
+const addVariableBlock = () => {
+  const editor = editorRef.value?.editor
+  const view = editor?.view
+  if (!view) return
+  const docLen = view.state.doc.length
+  const pos = lastCursorPos.value === null ? docLen : Math.max(0, Math.min(lastCursorPos.value, docLen))
+  editor.addVariableBlock(pos, 'user_email')
+  lastCursorPos.value = editor.view.state.selection.main.from
+}
+
+const attachCursorTracker = async () => {
+  await nextTick()
+  detachCursorTracker?.()
+
+  const view = editorRef.value?.editor?.view
+  if (!view) return
+
+  const update = () => {
+    lastCursorPos.value = view.state.selection.main.from
+  }
+
+  const onMouseUp = () => update()
+  const onKeyUp = () => update()
+  const onFocusIn = () => update()
+
+  view.dom.addEventListener('mouseup', onMouseUp)
+  view.dom.addEventListener('keyup', onKeyUp)
+  view.dom.addEventListener('focusin', onFocusIn)
+
+  detachCursorTracker = () => {
+    view.dom.removeEventListener('mouseup', onMouseUp)
+    view.dom.removeEventListener('keyup', onKeyUp)
+    view.dom.removeEventListener('focusin', onFocusIn)
+  }
+}
+
+onMounted(() => {
+  attachCursorTracker()
+})
+
+onUnmounted(() => {
+  detachCursorTracker?.()
+})
 </script>
 
 <template>
@@ -128,14 +174,12 @@ const printData = () => {
         |
         <i class="ci-task font-size-5" title="插入编辑块" @click="addBlock"></i>
         |
+        <i class="ci-task font-size-5" title="插入变量块" @click="addVariableBlock"></i>
+        |
         <i class="ci-print font-size-5" title="打印编辑器数据" @click="printData"></i>
       </div>
     </div>
     <Editor ref="editorRef" />
-    <h2>只读模式</h2>
-    <Editor ref="editorRef" readonly />
-    <h2>placeholder 空白占位</h2>
-    <Editor ref="editorRef" placeholder="请输入内容" />
   </div>
 </template>
 
