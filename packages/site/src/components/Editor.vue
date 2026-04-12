@@ -229,16 +229,8 @@ const addVariableBlock = (name: string) => {
 const insertVariable = (name: string) => {
   if (!editor.value) return;
   const view = editor.value.view;
-  const sel = view.state.selection.main;
-  const docLen = view.state.doc.length;
-  const from = Math.max(0, Math.min(sel.from, docLen));
-  const to = Math.max(0, Math.min(sel.to, docLen));
-  const token = `{{${name}}}`;
-  view.dispatch({
-    changes: { from, to, insert: token },
-    selection: { anchor: from + token.length }
-  });
-  view.focus();
+  const pos = view.state.selection.main.from;
+  editor.value.addVariableBlock(pos, name);
 }
 
 const sendAIQuestion = () => {
