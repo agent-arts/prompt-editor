@@ -145,33 +145,6 @@ const aiApplyRange = ref<{ from: number, to: number } | null>(null);
 const pluginPopupStyle = ref({ top: '0px', left: '0px' });
 const showPluginPopup = ref(false);
 
-const lastCursorPos = ref<number | null>(null);
-let detachCursorTracker: (() => void) | null = null;
-
-const attachCursorTracker = () => {
-  detachCursorTracker?.();
-  const view = editor.value?.view;
-  if (!view) return;
-
-  const update = () => {
-    lastCursorPos.value = view.state.selection.main.from;
-  };
-
-  const onMouseUp = () => update();
-  const onKeyUp = () => update();
-  const onFocusIn = () => update();
-
-  view.dom.addEventListener('mouseup', onMouseUp);
-  view.dom.addEventListener('keyup', onKeyUp);
-  view.dom.addEventListener('focusin', onFocusIn);
-
-  detachCursorTracker = () => {
-    view.dom.removeEventListener('mouseup', onMouseUp);
-    view.dom.removeEventListener('keyup', onKeyUp);
-    view.dom.removeEventListener('focusin', onFocusIn);
-  };
-};
-
 const closeAllPopups = () => {
   showPopup.value = false;
   showPluginPopup.value = false;
@@ -257,9 +230,16 @@ const insertVariable = (name: string) => {
   if (!editor.value) return;
   const view = editor.value.view;
   const docLen = view.state.doc.length;
-  const pos = lastCursorPos.value === null ? docLen : Math.max(0, Math.min(lastCursorPos.value, docLen));
-  editor.value.addVariableBlock(pos, name);
-  lastCursorPos.value = editor.value.view.state.selection.main.from;
+  const sel = view.state.selection.main;
+  const useSelection = view.hasFocus;
+  const from = useSelection ? Math.max(0, Math.min(sel.from, docLen)) : docLen;
+  const to = useSelection ? Math.max(0, Math.min(sel.to, docLen)) : docLen;
+  const token = `{{${name}}}`;
+  view.dispatch({
+    changes: { from, to, insert: token },
+    selection: { anchor: from + token.length }
+  });
+  view.focus();
 }
 
 const sendAIQuestion = () => {
@@ -297,7 +277,6 @@ const insertAIResult = () => {
 
 const recreateEditor = (content: string) => {
   if (editor.value) {
-    detachCursorTracker?.();
     editor.value.destroy();
   }
 
@@ -325,7 +304,6 @@ const recreateEditor = (content: string) => {
   };
 
   editor.value = new CustomEditor(options);
-  attachCursorTracker();
 }
 
 onMounted(() => {
@@ -356,7 +334,6 @@ onMounted(() => {
   };
 
   editor.value = new CustomEditor(options);
-  attachCursorTracker();
 
   aiPlugin.value = new LocalAIDialogController({
     onStream: (text: string) => aiResponseText.value = text,
@@ -405,7 +382,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('mousedown', closeAllPopups);
-  detachCursorTracker?.();
 });
 
 defineExpose({
