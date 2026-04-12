@@ -22,10 +22,6 @@ const addBlock = () => {
   editorRef.value.editor.addBlock();
 }
 
-const addVariableBlock = () => {
-  editorRef.value.insertVariable('var1');
-}
-
 const saveTemplate = () => {
   const data = editorRef.value.editor.getData();
   console.log('data', data);
@@ -132,12 +128,14 @@ const printData = () => {
         |
         <i class="ci-task font-size-5" title="插入编辑块" @click="addBlock"></i>
         |
-        <i class="ci-task font-size-5" title="插入变量块" @click="addVariableBlock"></i>
-        |
         <i class="ci-print font-size-5" title="打印编辑器数据" @click="printData"></i>
       </div>
     </div>
     <Editor ref="editorRef" />
+    <h2>只读模式</h2>
+    <Editor ref="editorRef" readonly />
+    <h2>placeholder 空白占位</h2>
+    <Editor ref="editorRef" placeholder="请输入内容" />
   </div>
 </template>
 

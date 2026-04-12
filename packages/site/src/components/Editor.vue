@@ -226,13 +226,6 @@ const addVariableBlock = (name: string) => {
   }
 }
 
-const insertVariable = (name: string) => {
-  if (!editor.value) return;
-  const view = editor.value.view;
-  const pos = view.state.selection.main.from;
-  editor.value.addVariableBlock(pos, name);
-}
-
 const sendAIQuestion = () => {
   if (aiQuestion.value && !isGenerating.value && aiPlugin.value) {
     isGenerating.value = true;
@@ -379,8 +372,7 @@ defineExpose({
   get editor() {
     return editor.value;
   },
-  recreateEditor,
-  insertVariable
+  recreateEditor
 })
 </script>
 
