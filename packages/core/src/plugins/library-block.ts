@@ -1,6 +1,6 @@
 import type { Extension } from '@codemirror/state';
 import { Facet, StateEffect, StateField } from '@codemirror/state';
-import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemirror/view';
+import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from '@codemirror/view';
 import { svgPlugin, svgWorkflow } from '../const';
 import type { PluginBlock } from '../types';
 
@@ -226,6 +226,21 @@ export function pluginBlockExtensions(options: {
   initialBlocks?: { pos: number, len?: number, block: PluginBlock }[];
   readonly?: boolean;
 }): Extension[] {
+  const findVariableRangeAt = (view: EditorView, pos: number): { from: number, to: number } | null => {
+    const field = view.state.field(variableTokenField, false);
+    if (!field) return null;
+    const docLen = view.state.doc.length;
+    let found: { from: number, to: number } | null = null;
+    field.between(0, docLen, (from, to) => {
+      if (pos >= from && pos <= to) {
+        found = { from, to };
+        return false;
+      }
+      return undefined;
+    });
+    return found;
+  };
+
   const findVariableEndingAt = (view: EditorView, pos: number): { from: number, to: number } | null => {
     const field = view.state.field(variableTokenField, false);
     if (!field) return null;
@@ -252,6 +267,65 @@ export function pluginBlockExtensions(options: {
     pluginBlockField,
     variableTokenField,
     variableTheme,
+    ViewPlugin.define((view) => {
+      let rafId: number | null = null;
+      let pendingPos: number | null = null;
+
+      const focusVariableInputAt = (pos: number) => {
+        const range = findVariableRangeAt(view, pos);
+        if (!range) return;
+        const spans = Array.from(view.dom.querySelectorAll('.cm-plugin-block-variable')) as HTMLElement[];
+        const span = spans.find((candidate) => {
+          try {
+            return view.posAtDOM(candidate) === range.from;
+          } catch {
+            return false;
+          }
+        }) ?? null;
+        const input = span?.querySelector('input.cm-variable-input') as HTMLInputElement | null;
+        if (!input) return;
+        input.focus();
+        const caret = Math.max(0, input.value.length - 2);
+        input.setSelectionRange(caret, caret);
+      };
+
+      return {
+        update(update: ViewUpdate) {
+          if (!update.docChanged) return;
+          if (update.state.facet(readonlyFacet)) return;
+
+          let shouldFocus = false;
+          let nextPos = 0;
+          update.changes.iterChanges((fromA, toA, fromB, _toB, inserted) => {
+            if (shouldFocus) return;
+            if (fromA !== toA) return;
+            const insertedText = inserted.sliceString(0);
+            if (!insertedText) return;
+            if (fromA < 2) return;
+            const startDoc = update.startState.doc;
+            if (fromA + 2 > startDoc.length) return;
+            if (startDoc.sliceString(fromA - 2, fromA) !== '{{') return;
+            if (startDoc.sliceString(fromA, fromA + 2) !== '}}') return;
+            shouldFocus = true;
+            nextPos = fromB + insertedText.length;
+          });
+
+          if (!shouldFocus) return;
+          pendingPos = nextPos;
+          if (rafId !== null) cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(() => {
+            rafId = null;
+            const pos = pendingPos;
+            pendingPos = null;
+            if (pos === null) return;
+            focusVariableInputAt(pos);
+          });
+        },
+        destroy() {
+          if (rafId !== null) cancelAnimationFrame(rafId);
+        }
+      };
+    }),
     EditorView.domEventHandlers({
       keydown: (event, view) => {
         if (view.state.facet(readonlyFacet)) return false;
