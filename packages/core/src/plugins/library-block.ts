@@ -271,17 +271,15 @@ export function pluginBlockExtensions(options: {
       let rafId: number | null = null;
       let pendingPos: number | null = null;
 
-      const isComposing = (update?: ViewUpdate) => {
-        const currentView = update?.view ?? view;
-        if (currentView.composing || currentView.compositionStarted) return true;
-        return !!update?.transactions.some((tr) => tr.isUserEvent('input.type.compose'));
-      };
-
       const scheduleFocus = () => {
         if (pendingPos === null) return;
         if (rafId !== null) cancelAnimationFrame(rafId);
         rafId = requestAnimationFrame(() => {
           rafId = null;
+          if (view.composing || view.compositionStarted) {
+            scheduleFocus();
+            return;
+          }
           const pos = pendingPos;
           pendingPos = null;
           if (pos === null) return;
@@ -311,7 +309,7 @@ export function pluginBlockExtensions(options: {
         update(update: ViewUpdate) {
           if (update.state.facet(readonlyFacet)) return;
 
-          if (pendingPos !== null && !isComposing(update)) {
+          if (pendingPos !== null) {
             scheduleFocus();
           }
           if (!update.docChanged) return;
@@ -334,7 +332,6 @@ export function pluginBlockExtensions(options: {
 
           if (!shouldFocus) return;
           pendingPos = nextPos;
-          if (isComposing(update)) return;
           scheduleFocus();
         },
         destroy() {
