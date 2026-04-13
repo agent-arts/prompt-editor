@@ -271,6 +271,24 @@ export function pluginBlockExtensions(options: {
       let rafId: number | null = null;
       let pendingPos: number | null = null;
 
+      const isComposing = (update?: ViewUpdate) => {
+        const currentView = update?.view ?? view;
+        if (currentView.composing || currentView.compositionStarted) return true;
+        return !!update?.transactions.some((tr) => tr.isUserEvent('input.type.compose'));
+      };
+
+      const scheduleFocus = () => {
+        if (pendingPos === null) return;
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          const pos = pendingPos;
+          pendingPos = null;
+          if (pos === null) return;
+          focusVariableInputAt(pos);
+        });
+      };
+
       const focusVariableInputAt = (pos: number) => {
         const range = findVariableRangeAt(view, pos);
         if (!range) return;
@@ -291,8 +309,12 @@ export function pluginBlockExtensions(options: {
 
       return {
         update(update: ViewUpdate) {
-          if (!update.docChanged) return;
           if (update.state.facet(readonlyFacet)) return;
+
+          if (pendingPos !== null && !isComposing(update)) {
+            scheduleFocus();
+          }
+          if (!update.docChanged) return;
 
           let shouldFocus = false;
           let nextPos = 0;
@@ -312,14 +334,8 @@ export function pluginBlockExtensions(options: {
 
           if (!shouldFocus) return;
           pendingPos = nextPos;
-          if (rafId !== null) cancelAnimationFrame(rafId);
-          rafId = requestAnimationFrame(() => {
-            rafId = null;
-            const pos = pendingPos;
-            pendingPos = null;
-            if (pos === null) return;
-            focusVariableInputAt(pos);
-          });
+          if (isComposing(update)) return;
+          scheduleFocus();
         },
         destroy() {
           if (rafId !== null) cancelAnimationFrame(rafId);
